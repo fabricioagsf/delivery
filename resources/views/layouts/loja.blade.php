@@ -4,22 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('titulo', texto('layout','site.nome','Gostosuras'))</title>
+    <meta name="theme-color" content="#ffb59c">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('icons/icon.svg') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon.svg') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>@yield('titulo', tema_texto('nome', 'Guloseimas'))</title>
     <link rel="stylesheet" href="{{ asset('css/loja.css') }}?v={{ filemtime(public_path('css/loja.css')) }}">
+    @if($cssTema = tema_css())
+        <link rel="stylesheet" href="{{ asset($cssTema) }}?v={{ filemtime(public_path($cssTema)) }}">
+    @endif
 </head>
 <body>
 
 <header class="topo">
     <div class="topo__conteudo">
         <a href="{{ route('vitrine') }}" class="logo">
-            {{ texto('layout', 'site.nome', 'Gostosuras') }}
-            <small>{{ texto('layout', 'site.slogan', 'doces artesanais') }}</small>
+            {{ tema_texto('nome', 'Guloseimas') }}
+            <small>{{ tema_texto('slogan', 'doces artesanais') }}</small>
         </a>
 
         <nav class="topo__acoes">
             <a href="{{ route('cardapio') }}" class="botao-botao-conta">
                 <span>{{ texto('layout', 'menu.cardapio', 'Cardápio') }}</span>
             </a>
+            <button type="button" class="botao-botao-conta oculto" id="instalar-app">
+                <span>{{ texto('layout', 'menu.instalar', 'Instalar app') }}</span>
+            </button>
             <button type="button" class="botao-botao-conta" id="abrir-conta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v3h16v-3c0-3-4-5-8-5Z"/></svg>
                 <span>{{ auth('cliente')->check() ? texto('layout','menu.conta','Minha conta') : texto('layout','menu.conta_entrar','Entrar') }}</span>
@@ -45,8 +57,8 @@
 <footer class="rodape">
     <div class="rodape__colunas">
         <div>
-            <h3>{{ texto('layout', 'site.nome', 'Gostosuras') }}</h3>
-            <p>{{ texto('layout', 'rodape.sobre', 'Brigadeiros, chocolates e doces artesanais feitos com carinho para adoçar o seu dia.') }}</p>
+            <h3>{{ tema_texto('nome', 'Guloseimas') }}</h3>
+            <p>{{ tema_texto('sobre', 'Brigadeiros, chocolates e doces artesanais feitos com carinho para adoçar o seu dia.') }}</p>
         </div>
         <div>
             <h3>{{ texto('layout', 'rodape.pagamentos_titulo', 'Formas de pagamento') }}</h3>
@@ -65,7 +77,7 @@
         </div>
     </div>
     <p class="rodape__direitos">
-        {{ str_replace(':ano', now()->format('Y'), texto('layout', 'rodape.direitos', ':ano Gostosuras — feito com muito chocolate.')) }}
+        {{ str_replace(':ano', now()->format('Y'), tema_texto('direitos', ':ano Guloseimas — feito com muito chocolate.')) }}
     </p>
 </footer>
 
@@ -116,6 +128,36 @@
     ]);
 </script>
 <script src="{{ asset('js/loja.js') }}?v={{ filemtime(public_path('js/loja.js')) }}"></script>
+<script>
+    (function () {
+        // Registra o service worker (PWA — cardápio consultável offline) quando o módulo está ativo
+        var pwaAtivo = {{ config_loja('pwa_ativo', '1') === '1' ? 'true' : 'false' }};
+        if (pwaAtivo && 'serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('{{ route('pwa.service_worker') }}').catch(function () {});
+            });
+        }
+
+        // Botão "Instalar app" — aparece somente quando o navegador permite instalar
+        var btnInstalar = document.getElementById('instalar-app');
+        var promptInstalar = null;
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            promptInstalar = e;
+            if (btnInstalar) btnInstalar.classList.remove('oculto');
+        });
+
+        if (btnInstalar) {
+            btnInstalar.addEventListener('click', function () {
+                if (!promptInstalar) return;
+                promptInstalar.prompt();
+                promptInstalar = null;
+                btnInstalar.classList.add('oculto');
+            });
+        }
+    })();
+</script>
 @stack('scripts')
 </body>
 </html>

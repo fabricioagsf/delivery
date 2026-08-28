@@ -44,6 +44,7 @@ class ConfiguracaoController extends Controller
         'efi_sandbox',
         'item_venda_ativo',
         'item_venda_tipo',
+        'tema_loja',
     ];
 
     private const SOCIAL_ENV_MAP = [
@@ -83,6 +84,7 @@ class ConfiguracaoController extends Controller
             'valores' => $valores,
             'passosMp' => $passosMp,
             'passosEfi' => $passosEfi,
+            'temas' => \App\Support\Temas::opcoes(),
         ]);
     }
 
@@ -113,6 +115,7 @@ class ConfiguracaoController extends Controller
             'efi_client_secret' => ['nullable', 'string', 'max:120'],
             'efi_pix_chave' => ['nullable', 'string', 'max:120'],
             'item_venda_tipo' => ['nullable', 'in:produtos,servicos,ambos'],
+            'tema_loja' => ['nullable', 'in:guloseimas,italiana,japonesa,chinesa,mexicana'],
         ], [
             '*.numeric' => texto('admin_config', 'erro.numero', 'Informe um número válido.'),
             '*.in' => texto('checkout', 'erro.opcao_invalida', 'Escolha uma opção válida.'),

@@ -26,9 +26,59 @@ class TextoSistemaSeeder extends Seeder
                 'rodape.direitos' => ':ano Gostosuras — feito com muito chocolate.',
             ],
 
+            // ================= TEMAS (identidade por tema) =================
+            // Cada tema tem nome/slogan/sobre/direitos próprios. A loja lê o tema
+            // ativo (config `tema_loja`) e usa `tema_texto` para exibir a identidade.
+            'tema' => [
+                // Tema confeitaria (padrão) — guloseimas
+                'guloseimas.nome' => 'Guloseimas',
+                'guloseimas.slogan' => 'doces e guloseimas artesanais',
+                'guloseimas.sobre' => 'Brigadeiros, chocolates e doces artesanais feitos com carinho para adoçar o seu dia.',
+                'guloseimas.direitos' => ':ano Guloseimas — feito com muito chocolate.',
+                'guloseimas.hero' => 'Guloseimas feitas à mão',
+                'guloseimas.hero_sub' => 'Brigadeiros gourmet, chocolates cremosos e docinhos que derretem no coração. Peça online e receba em casa — ou retire na loja.',
+                'guloseimas.hero_botao' => 'Ver as guloseimas',
+
+                // Tema italiano
+                'italiana.nome' => 'Trattoria Bella',
+                'italiana.slogan' => 'cucina italiana artesanal',
+                'italiana.sobre' => 'Massas, pizzas e risotos feitos à mão com ingredientes frescos e muito sabor.',
+                'italiana.direitos' => ':ano Trattoria Bella — buon appetito!',
+                'italiana.hero' => 'Cucina italiana fatta a mano',
+                'italiana.hero_sub' => 'Massas frescas, pizzas no forno a lenha e risotos cremosos. Peça online e receba em casa — ou retire na loja.',
+                'italiana.hero_botao' => 'Ver o cardápio',
+
+                // Tema japonês
+                'japonesa.nome' => 'Sakura Izakaya',
+                'japonesa.slogan' => 'sabores do Japão',
+                'japonesa.sobre' => 'Sushis, temakis e pratos japoneses preparados com peixe fresco e delicadeza.',
+                'japonesa.direitos' => ':ano Sakura Izakaya — arigatou gozaimasu!',
+                'japonesa.hero' => 'Sabores frescos do Japão',
+                'japonesa.hero_sub' => 'Sushis, temakis e pratos japoneses feitos com peixe fresco e delicadeza. Peça online e receba em casa — ou retire na loja.',
+                'japonesa.hero_botao' => 'Ver o cardápio',
+
+                // Tema chinês
+                'chinesa.nome' => 'Dragão Dourado',
+                'chinesa.slogan' => 'cozinha chinesa autêntica',
+                'chinesa.sobre' => 'Yakissoba, macarrão e clássicos da culinária chinesa com sabor autêntico.',
+                'chinesa.direitos' => ':ano Dragão Dourado — bom apetite!',
+                'chinesa.hero' => 'Cozinha chinesa autêntica',
+                'chinesa.hero_sub' => 'Yakissoba, macarrão e clássicos da culinária chinesa. Peça online e receba em casa — ou retire na loja.',
+                'chinesa.hero_botao' => 'Ver o cardápio',
+
+                // Tema mexicano
+                'mexicana.nome' => 'Taqueria El Sol',
+                'mexicana.slogan' => 'sabores do México',
+                'mexicana.sobre' => 'Tacos, burritos e pratos mexicanos vibrantes com temperos intensos.',
+                'mexicana.direitos' => ':ano Taqueria El Sol — buen provecho!',
+                'mexicana.hero' => 'Sabores vibrantes do México',
+                'mexicana.hero_sub' => 'Tacos, burritos e pratos mexicanos com temperos intensos. Peça online e receba em casa — ou retire na loja.',
+                'mexicana.hero_botao' => 'Ver o cardápio',
+            ],
+
             // ================= VITRINE =================
             'vitrine' => [
-                'titulo.pagina' => 'Gostosuras — Doces artesanais',
+                'titulo.pagina' => 'Doces artesanais',
                 'hero.titulo' => 'Gostosuras feitas à mão',
                 'hero.subtitulo' => 'Brigadeiros gourmet, chocolates cremosos e docinhos que derretem no coração. Peça online e receba em casa — ou retire na loja.',
                 'hero.botao' => 'Ver as gostosuras',
@@ -61,7 +111,7 @@ class TextoSistemaSeeder extends Seeder
 
             // ================= CARDÁPIO =================
             'cardapio' => [
-                'titulo.pagina' => 'Cardápio — Gostosuras',
+                'titulo.pagina' => 'Cardápio',
                 'titulo' => 'Cardápio',
                 'subtitulo' => 'Escolha suas gostosuras e peça pelo site — receba em casa ou retire na loja.',
                 'contador' => ':n gostosuras no cardápio',
@@ -73,7 +123,7 @@ class TextoSistemaSeeder extends Seeder
 
             // ================= CARRINHO =================
             'carrinho' => [
-                'titulo.pagina' => 'Seu carrinho — Gostosuras',
+                'titulo.pagina' => 'Seu carrinho',
                 'vazio' => 'Seu carrinho está mais doce que deveria... está vazio!',
                 'botao.voltar' => 'Ver as gostosuras',
                 'botao.finalizar' => 'Finalizar pedido',
@@ -100,7 +150,7 @@ class TextoSistemaSeeder extends Seeder
 
             // ================= CHECKOUT =================
             'checkout' => [
-                'titulo.pagina' => 'Finalizar pedido — Gostosuras',
+                'titulo.pagina' => 'Finalizar pedido',
                 'erro.titulo' => 'Confira os campos:',
                 'erro.campo_obrigatorio' => 'Preencha o campo :attribute.',
                 'campo.nome_cliente' => 'Nome completo',
@@ -143,7 +193,7 @@ class TextoSistemaSeeder extends Seeder
 
             // ================= CONFIRMAÇÃO =================
             'confirmacao' => [
-                'titulo.pagina' => 'Pedido confirmado — Gostosuras',
+                'titulo.pagina' => 'Pedido confirmado',
                 'titulo' => 'Pedido confirmado!',
                 'mensagem' => 'Suas gostosuras já estão na fila do tacho. Em breve entraremos em contato para confirmar tudo.',
                 'codigo.rotulo' => 'Código do pedido',
@@ -496,6 +546,9 @@ class TextoSistemaSeeder extends Seeder
                 'secao.item_venda' => 'Produtos e serviços (item-venda)',
                 'nota.item_venda' => 'Controle geral do módulo de produtos e serviços. Os detalhes ficam na tela própria do módulo no menu.',
                 'campo.item_venda_ativo' => 'Ativar cadastro de produtos e serviços',
+                'secao.tema' => 'Tema da loja',
+                'nota.tema' => 'Muda as cores e a identidade da loja (nome, slogan e rodapé). O tema também vale para o cardápio.',
+                'campo.tema_loja' => 'Tema ativo',
             ],
 
             // ================= ADMIN: MÓDULO PRODUTOS E SERVIÇOS (item-venda) =================
@@ -521,6 +574,25 @@ class TextoSistemaSeeder extends Seeder
                 'sucesso.salvo' => 'Módulo de produtos e serviços atualizado!',
             ],
 
+            // ================= ADMIN: PWA =================
+            'admin_pwa' => [
+                'titulo' => 'PWA / App — Gostosuras',
+                'titulo.pagina' => 'Módulo PWA (app / cardápio offline)',
+                'secao.geral' => 'App instalável',
+                'campo.ativo' => 'Ativar PWA (cardápio consultável offline e instalável no celular)',
+                'nota.explicacao' => 'Com o PWA ativo, o cliente visita o cardápio uma vez e depois consegue consultá-lo mesmo sem internet, além de poder instalar o atalho na tela inicial do celular.',
+                'secao.status' => 'Status atual',
+                'metrica.imagens' => 'imagens guardadas para consulta offline',
+                'metrica.cache' => 'versão do cache do app',
+                'campo.renovar' => 'Renovar agora o cache dos clientes (recarregar cardápio/preços na próxima abertura)',
+                'secao.links' => 'Links do app',
+                'link.cardapio' => 'Ver o cardápio que fica disponível offline',
+                'link.sw_nome' => 'service worker',
+                'link.manifest_nome' => 'manifesto do app',
+                'botao.salvar' => 'Salvar app (PWA)',
+                'sucesso.salvo' => 'Configuração do app (PWA) salva!',
+            ],
+
             // ================= ADMIN: LAYOUT / LOGIN =================
             'admin_layout' => [
                 'menu.auditoria' => 'Auditoria',
@@ -534,6 +606,7 @@ class TextoSistemaSeeder extends Seeder
                 'menu.clientes' => 'Clientes',
                 'menu.configuracoes' => 'Configurações',
                 'menu.item_venda' => 'Produtos e serviços',
+                'menu.pwa' => 'PWA / App',
                 'menu.help' => 'Ajuda',
                 'menu.ver_loja' => 'Ver loja',
             ],

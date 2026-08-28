@@ -99,6 +99,15 @@ gerado por serviço externo `api.qrserver.com` (nenhuma dependência nova).
 - Link "Cardápio" também está no menu superior da loja.
 - Só aparecem categorias que tenham ao menos um produto ativo.
 
+## Temas (identidade cultural)
+
+A loja tem **5 temas** que trocam a **identidade cultural** (cores + nome + slogan +
+rodapé + herói + título): **Guloseimas** (confeitaria, padrão), **Italiana**, **Japonesa**,
+**Chinesa** e **Mexicana**. Seleção em **/admin/configuracoes → "Tema da loja"** (`tema_loja`).
+As paletas ficam em `public/css/themes/*.css` e a identidade de cada tema no grupo `tema`
+da tabela `textos`. O **conteúdo do cardápio** é gerido pelo cadastro de produtos (a
+regionalidade de conteúdo será tratada pelas filiais/multi-lojas — veja o roadmap).
+
 ## Painel de administração
 
 | Página | Conteúdo |
@@ -106,11 +115,20 @@ gerado por serviço externo `api.qrserver.com` (nenhuma dependência nova).
 | Dashboard | Faturamento/pedidos hoje e no mês, ticket médio, gráfico dos últimos 14 dias, pedidos recentes, estoque crítico |
 | Pedidos | Lista filtrável por status/cliente/código, alteração de status (novo → em preparo → em entrega → entregue / cancelado), detalhe completo com troco, lembrete da chave de segurança e **encaminhamento ao cliente pelo WhatsApp** (API ou link `wa.me`) |
 | Produtos e estoque | Busca, filtros (baixo/esgotado), ajuste rápido de estoque e mínimo, liga/desliga vitrine e destaque, **complementos do produto** |
-| Configurações | Loja (taxa de entrega, chave Pix, margem de produção), NF-e, WhatsApp Cloud API, login social, pagamento online, módulo item-venda e **Cardápio digital (link + QR)** |
+| Configurações | Loja (taxa de entrega, chave Pix, margem de produção, **tema da loja**), NF-e, WhatsApp Cloud API, login social, pagamento online, módulo item-venda e **Cardápio digital (link + QR)** |
 | Clientes | Contas, métricas e redefinição de senha (envio via WhatsApp) |
 | Relatórios | Período personalizável com abas: vendas por dia, produtos mais vendidos, **previsão de produção por horário**, pagamentos, entregas × retiradas, estoque crítico |
 | Banners | CRUD com agendamento automático (entra/sai do ar sozinho) |
 | Auditoria | Histórico de tudo criado/alterado/excluído no banco + restauração por ponto no tempo (exige senha master) |
+| PWA / App | Módulo PWA: ativa/desativa o cardápio offline e a instalação, mostra nº de imagens guardadas, links do service worker/manifesto e **renova o cache** dos clientes |
+
+### PWA (app / cardápio offline)
+
+O delivery é uma **PWA** (JS puro, sem biblioteca externa). O cliente visita o
+**cardápio** (`/cardapio`) uma vez e depois o **consulta sem internet** (Service Worker
+guarda HTML, CSS/JS e as imagens dos produtos/banners ativos), além de poder **instalar** um
+atalho na tela inicial do celular. Gestão em `/admin/pwa` (menu "PWA / App"). Veja
+[docs/HELP.md](docs/HELP.md#6-módulo-pwa-app--cardápio-offline) para detalhes.
 
 ### Métrica de produção por horário
 

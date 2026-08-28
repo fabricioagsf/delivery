@@ -17,9 +17,10 @@ configuração, normalmente em **/admin/configuracoes**.
 3. [Painel administrativo — funções por tela](#3-painel-administrativo--funções-por-tela)
 4. [Todas as configurações](#4-todas-as-configurações)
 5. [Configuração do cardápio digital](#5-configuração-do-cardápio-digital)
-6. [Login social e WhatsApp](#6-login-social-e-whatsapp)
-7. [Auditoria e restauração](#7-auditoria-e-restauração)
-8. [Comandos úteis](#8-comandos-úteis)
+6. [Módulo PWA (app / cardápio offline)](#6-módulo-pwa-app--cardápio-offline)
+7. [Login social e WhatsApp](#7-login-social-e-whatsapp)
+8. [Auditoria e restauração](#8-auditoria-e-restauração)
+9. [Comandos úteis](#9-comandos-úteis)
 
 ---
 
@@ -98,6 +99,7 @@ Acesso: `http://localhost:8000/admin` (usuário/senha só no banco — `php arti
 | **Produtos e estoque** (`/admin/produtos`) | CRUD de produtos; **complementos** por produto (adicionais e remoções); busca e filtros (baixo/esgotado); ajuste rápido de **estoque e estoque mínimo**; liga/desliga **exibição na vitrine** e **destaque**. |
 | **Configurações** (`/admin/configuracoes`) | Ver [seção 4](#4-todas-as-configurações) + seção **Cardápio digital**. |
 | **Item-venda** (`/admin/item-venda`) | Ativa/desativa o módulo produto/serviço (`item_venda_ativo`) e define o tipo vendido (`item_venda_tipo`: produtos / serviços / ambos). |
+| **PWA / App** (`/admin/pwa`) | Gerencia o módulo PWA (seção [6](#6-módulo-pwa-app--cardápio-offline)): liga/desliga a instalação e o cardápio offline, mostra quantas imagens ficam guardadas, vê o link do service worker/manifesto e **renova o cache** dos clientes. |
 | **Clientes** (`/admin/clientes`) | Contas + métricas; **redefinir senha** para `123Mudar` e enviar pelo WhatsApp; **campanha** (oferta) em massa por WhatsApp (API direto ou links prontos). |
 | **Relatórios** (`/admin/relatorios`) | Período personalizável com abas: **vendas por dia**, **produtos mais vendidos**, **previsão de produção por horário** (aplica `margem_producao`), **pagamentos**, **entregas × retiradas**, **estoque crítico**. Exporta CSV (UTF-8, `;`) e extrato mensal (impressão/PDF). |
 | **Banners** (`/admin/banners`) | CRUD com **agendamento automático** (entra/sai do ar sozinho pelo período). |
@@ -123,6 +125,7 @@ helper `config_loja()`. Flags ativam com `1`, desativam com `0`.
 | `taxa_entrega` | Valor cobrado na entrega (R$). |
 | `chave_pix` | Chave Pix para pagamento manual (copia e cola). |
 | `margem_producao` | Margem de segurança (%) da previsão de produção por horário. |
+| `tema_loja` | Tema visual/identidade ativo: `guloseimas`, `italiana`, `japonesa`, `chinesa` ou `mexicana`. Muda cores (CSS) e nome/slogan/rodapé/herói da loja e do cardápio. Editado na seção **Tema da loja** de `/admin/configuracoes`. |
 
 ### Nota fiscal (NF-e / NFC-e)
 | Chave | Descrição |
@@ -170,6 +173,14 @@ Webhooks (cadastre no painel dos provedores): `/webhooks/mercadopago` e `/webhoo
 
 Alteradas principalmente na tela `/admin/item-venda`.
 
+### Módulo PWA (app / cardápio offline)
+| Chave | Descrição |
+|---|---|
+| `pwa_ativo` | `1` = PWA ativo (service worker registrado → cardápio consultável offline + instalável no celular). |
+| `pwa_cache_versao` | Número da versão do cache. Aumente (ou use "Renovar cache" na tela PWA) para forçar os clientes a recarregar cardápio/preços/imagens na próxima abertura. |
+
+Alteradas na tela `/admin/pwa`.
+
 ---
 
 ## 5. Configuração do cardápio digital
@@ -189,9 +200,40 @@ atalho "Cardápio" no menu superior da loja.
 Para publicar um cardápio completo: mantenha as categorias desejadas **ativas** e os
 produtos marcados como **exibidos na vitrine** (`ativo`). O cardápio herda exatamente isso.
 
+### Temas da loja
+A loja tem **5 temas** que mudam as cores (paleta CSS) e a **identidade** (nome, slogan,
+rodapé, herói da vitrine e título do navegador): **Guloseimas** (confeitaria, padrão),
+**Italiana**, **Japonesa**, **Chinesa** e **Mexicana**. Basta escolher em
+**/admin/configuracoes → "Tema da loja"** (`tema_loja`). O tema vale para a loja inteira,
+inclusive o cardápio. Os textos de cada tema ficam no grupo `tema` da tabela `textos`
+(ex.: `tema.italiana.nome`) e as paletas em `public/css/themes/*.css`. O tema padrão
+(Guloseimas) usa as cores base, sem arquivo de override.
+
 ---
 
-## 6. Login social e WhatsApp
+## 6. Módulo PWA (app / cardápio offline)
+
+O delivery é uma **PWA**: o cliente visita o **cardápio** uma vez e depois consegue
+**consultá-lo sem internet** (imagens, CSS e o próprio HTML ficam guardados no navegador),
+além de poder **instalar** um atalho na tela inicial do celular (como um app).
+
+- Tela de gestão: **/admin/pwa** (menu "PWA / App"). Lá é possível:
+  - **Ativar/desativar** o PWA (`pwa_ativo`).
+  - Ver **quantas imagens** do cardápio ficam guardadas para uso offline.
+  - Ver os links do **service worker** (`/sw.js`) e do **manifesto** (`/manifest.webmanifest`).
+  - **Renovar o cache** dos clientes (incrementa `pwa_cache_versao` → na próxima abertura
+    eles baixam cardápio/preços/imagens atualizados e o cache antigo é descartado).
+- Implementação: JS puro (Service Worker), sem biblioteca externa.
+  - `install` pré-guarda CSS/JS do cardápio + imagens dos **produtos ativos** e **banners**.
+  - Navegação: tenta a rede primeiro; sem internet, cai na última cópia (`network-first`).
+  - Assets (css/js/imagens): servidos do cache com atualização em segundo plano.
+  - `POST` (checkout) não é interceptado — comprar continua exigindo internet.
+- A seleção de imagens é **dinâmica**: novos produtos/banners entram no cache sozinhos.
+- Botão **"Instalar app"** aparece no menu da loja nos navegadores que permitem instalar.
+
+---
+
+## 7. Login social e WhatsApp
 
 ### Login social
 - Configurar em **/admin/configuracoes** os provedores (flag + client id + secret).
@@ -206,7 +248,7 @@ produtos marcados como **exibidos na vitrine** (`ativo`). O cardápio herda exat
 
 ---
 
-## 7. Auditoria e restauração
+## 8. Auditoria e restauração
 
 - **Duas camadas**: gatilhos MySQL (gravam toda mudança, mesmo via phpMyAdmin) + trait
   `Auditoravel` na aplicação (com autoria: usuário, IP, URL).
@@ -218,7 +260,7 @@ produtos marcados como **exibidos na vitrine** (`ativo`). O cardápio herda exat
 
 ---
 
-## 8. Comandos úteis
+## 9. Comandos úteis
 
 ```bash
 php artisan admin:senha            # cria/redefine o acesso do painel (email+senha com hash)

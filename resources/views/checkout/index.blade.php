@@ -1,6 +1,6 @@
 @extends('layouts.loja')
 
-@section('titulo', texto('checkout', 'titulo.pagina', 'Finalizar pedido — Gostosuras'))
+@section('titulo', tema_texto('nome', 'Guloseimas').' — '.texto('checkout', 'titulo.pagina', 'Finalizar pedido'))
 
 @section('conteudo')
 <h1 class="titulo-pagina">{{ texto('checkout', 'titulo.pagina', 'Finalizar pedido') }}</h1>

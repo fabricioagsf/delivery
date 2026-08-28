@@ -654,3 +654,16 @@ td { vertical-align: middle; }
 }
 .help-doc hr { border: 0; border-top: 2px solid var(--creme-forte); margin: 22px 0; }
 
+/* ===== PWA / App ===== */
+.lista-links-pwa { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.lista-links-pwa li {
+    background: var(--creme-forte); border-radius: 10px; padding: 12px 14px;
+    font-size: .88rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.lista-links-pwa a { color: var(--cor-primaria-escura, #743312); font-weight: 600; text-decoration: underline; }
+.lista-links-pwa code {
+    background: #fffdfa; border: 1px solid var(--creme-forte); padding: 3px 8px;
+    border-radius: 6px; font-size: .8rem; color: var(--chocolate-medio);
+}
+
+

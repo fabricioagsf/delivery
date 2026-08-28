@@ -46,6 +46,9 @@
             <a href="{{ route('admin.configuracoes.index') }}" class="{{ request()->routeIs('admin.configuracoes*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.configuracoes', 'Configurações') }}
             </a>
+            <a href="{{ route('admin.pwa.index') }}" class="{{ request()->routeIs('admin.pwa*') ? 'ativo' : '' }}">
+                {{ texto('admin_layout', 'menu.pwa', 'PWA / App') }}
+            </a>
             <a href="{{ route('admin.help') }}" class="{{ request()->routeIs('admin.help') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.help', 'Ajuda') }}
             </a>

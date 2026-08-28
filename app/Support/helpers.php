@@ -96,3 +96,32 @@ if (! function_exists('detectar_bandeira')) {
         return 'Outro';
     }
 }
+
+if (! function_exists('tema_ativo')) {
+    /** Retorna o id do tema ativo da loja (config `tema_loja`). */
+    function tema_ativo(): string
+    {
+        return \App\Support\Temas::ativo();
+    }
+}
+
+if (! function_exists('tema_css')) {
+    /** Retorna o caminho (relativo a public/) da CSS de paleta do tema ativo, ou null (usa a base). */
+    function tema_css(): ?string
+    {
+        return \App\Support\Temas::css();
+    }
+}
+
+if (! function_exists('tema_texto')) {
+    /**
+     * Texto de identidade do tema ativo (grupo `tema`, chave `{tema}.{chave}`),
+     * com fallback para o texto base da loja quando não existir valor do tema.
+     */
+    function tema_texto(string $chave, string $fallback): string
+    {
+        $tema = \App\Support\Temas::ativo();
+
+        return texto('tema', $tema.'.'.$chave, $fallback);
+    }
+}

@@ -1,0 +1,22 @@
+/* ==========================================================================
+   TEMA ITALIANA - cozinha italiana
+   Paleta: tomate (primaria) + verde manjericao + creme (trattoria)
+   ========================================================================== */
+
+:root {
+    --cor-primaria: #e0522f;
+    --cor-primaria-escura: #c43c1e;
+    --cor-primaria-texto: #7a1f0d;
+    --cor-link: #b5351a;
+    --chocolate: #4a2418;
+    --chocolate-medio: #6e3b28;
+    --creme: #fff8f1;
+    --creme-forte: #ffede3;
+    --branco: #ffffff;
+    --erro: #b3261e;
+    --ok: #2e7d32;
+    --sombra: 0 10px 24px rgba(180, 60, 30, .14);
+    --raio: 18px;
+    --fonte-display: Georgia, 'Times New Roman', serif;
+    --fonte-corpo: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}

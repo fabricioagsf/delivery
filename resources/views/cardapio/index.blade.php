@@ -1,6 +1,6 @@
 @extends('layouts.loja')
 
-@section('titulo', texto('cardapio', 'titulo.pagina', 'Cardápio — Gostosuras'))
+@section('titulo', tema_texto('nome', 'Guloseimas').' — '.texto('cardapio', 'titulo.pagina', 'Cardápio'))
 
 @section('conteudo')
 <section class="cardapio-cabecalho">

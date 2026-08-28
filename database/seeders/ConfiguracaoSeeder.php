@@ -54,6 +54,13 @@ class ConfiguracaoSeeder extends Seeder
             'item_venda_ativo' => '0',         // '1' = módulo de produtos/serviços ativo
             // O que o sistema vende: 'produtos' | 'servicos' | 'ambos' (delivery usa 'produtos' por padrão)
             'item_venda_tipo' => 'produtos',
+
+            // ===== PWA (cardapio offline / instalavel) =====
+            'pwa_ativo' => '1',            // '1' = service worker registrado (cardapio offline habilitado)
+            'pwa_cache_versao' => '1',     // numero inteiro: aumente para forcar limpeza/recarga do cache do cliente
+
+            // ===== Tema da loja =====
+            'tema_loja' => 'guloseimas',   // guloseimas | italiana | japonesa | chinesa | mexicana
         ];
 
         foreach ($padroes as $chave => $valor) {

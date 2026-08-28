@@ -15,6 +15,8 @@ Mapa completo de rotas, controllers, services e helpers. Complementa o `README.m
 | GET | `/` | `vitrine` | VitrineController@index | Vitrine (filtro por categoria aceita AJAX e devolve partial `vitrine.partials.resultados`) |
 | GET | `/vitrine/versao` | `vitrine.versao` | VitrineController@versao | Hash de preço/estoque para polling da vitrine viva |
 | GET | `/cardapio` | `cardapio` | CardapioController@index | Cardápio digital público: produtos ativos por categorias ativas; pedido direto reusa o fluxo loja |
+| GET | `/manifest.webmanifest` | `pwa.manifest` | PwaController@manifest | Web App Manifest do PWA (nome da loja, tema salmão, ícone SVG) |
+| GET | `/sw.js` | `pwa.service_worker` | PwaController@serviceWorker | Service worker: pré-cacheia CSS/JS + imagens de produtos ativos e banners (cardápio offline). Cache nomeado por `pwa_cache_versao` |
 | GET | `/carrinho` | `carrinho.index` | CarrinhoController@index | Página do carrinho |
 | POST | `/carrinho/adicionar` | `carrinho.adicionar` | CarrinhoController@adicionar | Adiciona item (JSON: contagem, mensagem). Aceita `quantidade` e `complementos` (array de ids); cada combinação vira linha separada |
 | POST | `/carrinho/atualizar` | `carrinho.atualizar` | CarrinhoController@atualizar | Muda quantidade (valida estoque) |
@@ -67,6 +69,8 @@ os flags são limpos no servidor ao concluir (`ContaController`).
 | POST | `/admin/pedidos/{pedido}/whatsapp` | `admin.pedidos.whatsapp` | Admin\PedidoController | Encaminha o pedido ao cliente pelo WhatsApp (API Cloud ou fallback link `wa.me`) |
 | GET | `/admin/item-venda` | `admin.item-venda.index` | Admin\ItemVendaController | Painel de configuração do módulo produto/serviço (item-venda) |
 | POST | `/admin/item-venda` | `admin.item-venda.atualizar` | Admin\ItemVendaController | Salva `item_venda_ativo`/`item_venda_tipo` |
+| GET | `/admin/pwa` | `admin.pwa.index` | Admin\AdminPwaController | Painel do módulo PWA (status, qtd de imagens, links, renovar cache) |
+| POST | `/admin/pwa` | `admin.pwa.atualizar` | Admin\AdminPwaController | Salva `pwa_ativo` e, marcado, incrementa `pwa_cache_versao` |
 | GET/POST | `/admin/configuracoes` | `admin.configuracoes.index` / `.salvar` | Admin\ConfiguracaoController | 20 chaves da tabela `configuracoes` (loja, NF-e, WhatsApp, login social) |
 | GET | `/admin/clientes` | `admin.clientes.index` | Admin\ClienteController | Contas + métricas |
 | POST | `/admin/clientes/{cliente}/senha-whatsapp` | `admin.clientes.senha` | Admin\ClienteController | Redefine para `123Mudar` e envia (API ou link wa.me) |
@@ -109,7 +113,9 @@ os flags são limpos no servidor ao concluir (`ContaController`).
 `mercadopago_ativo`, `mercadopago_access_token`, `mercadopago_public_key`,
 `efi_ativo`, `efi_client_id`, `efi_client_secret`, `efi_pix_chave`, `efi_sandbox`,
 `item_venda_ativo` ('1' = módulo produto/serviço ligado), `item_venda_tipo`
-(`produtos` | `servicos` | `ambos`).
+(`produtos` | `servicos` | `ambos`), `pwa_ativo` ('1' = service worker registrado →
+cardápio offline), `pwa_cache_versao` (número do cache; aumentar força recarga),
+`tema_loja` (`guloseimas` | `italiana` | `japonesa` | `chinesa` | `mexicana`).
 
 Padrões criados por `ConfiguracaoSeeder`. Editáveis em **/admin/configuracoes**.
 
@@ -119,7 +125,38 @@ Padrões criados por `ConfiguracaoSeeder`. Editáveis em **/admin/configuracoes*
 - `public/js/admin.js` + scripts inline por tela — produtos, pedidos, clientes (senha/campanha respeitam `modo: api|link`), banners.
 - `layouts/loja.blade.php` injeta `window.Rotas`, `window.Textos` e `window.ContaEstado`.
 
-## 8. Complementos (dados)
+## 8. Temas (identidade cultural)
+
+- Tema = **identidade cultural** (cores + nome + slogan + rodapé + herói + título do
+  navegador). O **cardápio/conteúdo** é gerido por quem cadastra os produtos (a
+  regionalidade de conteúdo fica a cargo das **filiais/multi-lojas**).
+- `App\Support\Temas` é o registro dos temas (`guloseimas`, `italiana`, `japonesa`,
+  `chinesa`, `mexicana`) com o caminho da CSS de paleta. `config_loja('tema_loja')` define
+  o ativo (selecionado em `/admin/configuracoes` → "Tema da loja").
+- Helpers (helpers.php): `tema_ativo()`, `tema_css()`, `tema_texto('chave', fallback)`.
+- `tema_texto()` lê a identidade no grupo `tema` da tabela `textos` (chaves
+  `{tema}.nome|slogan|sobre|direitos|hero|hero_sub|hero_botao`).
+- Paletas: `guloseimas` usa as cores base (sem override); os demais têm
+  `public/css/themes/{italiana,japonesa,chinesa,mexicana}.css`, carregados em
+  `layouts/loja.blade.php` após `loja.css`.
+
+## 9. PWA (app / cardápio offline)
+
+- Implementação **100% JS puro** (Service Worker), sem dependência externa.
+- `PwaController@serviceWorker` gera `/sw.js` (infere assets + imagens de **produtos
+  ativos** e **banners** do banco — seleção dinâmica). `PwaController@manifest` gera
+  `/manifest.webmanifest` (nome/slogan do **tema ativo**, ícone SVG).
+- `resources/views/pwa/sw.blade.php` é o service worker:
+  - `install` pré-cacheia CSS/JS do cardápio + imagens (cache nomeado por `pwa_cache_versao`);
+  - `activate` descarta caches de versões antigas;
+  - navegação `network-first` (sem internet cai na última cópia do cardápio); assets
+    estáticos cache-first com atualização em segundo plano; `POST`/checkout não interceptados.
+- `layouts/loja.blade.php` registra o SW quando `pwa_ativo='1'`, expõe o manifesto e um
+  botão **"Instalar app"** (mostra só quando o navegador permite, evento `beforeinstallprompt`).
+- Gestão em `/admin/pwa` (menu "PWA / App"): ativar/desativar, ver nº de imagens e
+  links, e **renovar o cache** (incrementa `pwa_cache_versao`).
+
+## 10. Complementos (dados)
 
 - Migrations: `2026_08_27_000001_create_produto_complementos_table.php` (tabela
   `produto_complementos`) e `2026_08_27_000002_add_complementos_to_pedido_itens_table.php`
@@ -130,7 +167,7 @@ Padrões criados por `ConfiguracaoSeeder`. Editáveis em **/admin/configuracoes*
 - Cartão/checkout por linhas: cada combinação de complementos gera linha separada;
   preços recomputados do banco (regra de ouro). O pedido guarda snapshot dos complementos.
 
-## 9. Observações
+## 11. Observações
 
 - `resources/views/welcome.blade.php` é o scaffold padrão do Laravel, **não é renderizado**
   (a `/` é a vitrine) e cita rotas `login`/`register` inexistentes — inofensivo; pode ser

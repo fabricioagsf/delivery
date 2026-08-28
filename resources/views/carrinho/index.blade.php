@@ -1,6 +1,6 @@
 @extends('layouts.loja')
 
-@section('titulo', texto('carrinho', 'titulo.pagina', 'Seu carrinho — Gostosuras'))
+@section('titulo', tema_texto('nome', 'Guloseimas').' — '.texto('carrinho', 'titulo.pagina', 'Seu carrinho'))
 
 @section('conteudo')
 <h1 class="titulo-pagina">{{ texto('carrinho', 'titulo.pagina', 'Seu carrinho') }}</h1>

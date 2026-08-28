@@ -216,6 +216,20 @@
         </label>
     </x-config-section>
 
+    {{-- ======================== TEMA DA LOJA ======================== --}}
+    <x-config-section
+        :legend="texto('admin_config', 'secao.tema', 'Tema da loja')"
+        :description="texto('admin_config', 'nota.tema', 'Muda as cores e a identidade da loja (nome, slogan e rodapé). O tema também vale para o cardápio.')"
+    >
+        <label>{{ texto('admin_config', 'campo.tema_loja', 'Tema ativo') }}
+            <select name="tema_loja">
+                @foreach($temas as $id => $nome)
+                    <option value="{{ $id }}" {{ old('tema_loja', $valores['tema_loja'] ?? 'guloseimas') === $id ? 'selected' : '' }}>{{ $nome }}</option>
+                @endforeach
+            </select>
+        </label>
+    </x-config-section>
+
     <div class="rodape-form">
         <button type="submit" class="botao botao--chefe">{{ texto('admin_config', 'botao.salvar', 'Salvar configurações') }}</button>
     </div>

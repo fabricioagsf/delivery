@@ -23,6 +23,10 @@ Route::get('/', [VitrineController::class, 'index'])->name('vitrine');
 Route::get('/vitrine/versao', [VitrineController::class, 'versao'])->name('vitrine.versao');
 Route::get('/cardapio', [CardapioController::class, 'index'])->name('cardapio');
 
+// PWA (cardápio offline / instalável) — manifesto e service worker
+Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/sw.js', [\App\Http\Controllers\PwaController::class, 'serviceWorker'])->name('pwa.service_worker');
+
 Route::prefix('carrinho')->name('carrinho.')->group(function () {
     Route::get('/', [CarrinhoController::class, 'index'])->name('index');
     Route::post('/adicionar', [CarrinhoController::class, 'adicionar'])->name('adicionar');
@@ -101,6 +105,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/item-venda', [\App\Http\Controllers\Admin\ItemVendaController::class, 'index'])->name('item-venda.index');
         Route::post('/item-venda', [\App\Http\Controllers\Admin\ItemVendaController::class, 'atualizar'])->name('item-venda.atualizar');
+
+        Route::get('/pwa', [\App\Http\Controllers\Admin\AdminPwaController::class, 'index'])->name('pwa.index');
+        Route::post('/pwa', [\App\Http\Controllers\Admin\AdminPwaController::class, 'atualizar'])->name('pwa.atualizar');
 
         Route::get('/help', [\App\Http\Controllers\Admin\HelpController::class, 'index'])->name('help');
 

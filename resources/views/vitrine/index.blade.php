@@ -1,6 +1,6 @@
 @extends('layouts.loja')
 
-@section('titulo', texto('vitrine', 'titulo.pagina', 'Gostosuras — Doces artesanais'))
+@section('titulo', tema_texto('nome', 'Guloseimas').' — '.texto('vitrine', 'titulo.pagina', 'Doces artesanais'))
 
 @section('conteudo')
 @if($banners->isNotEmpty())
@@ -30,9 +30,9 @@
 @else
 <section class="hero">
     <div class="hero__texto">
-        <h1>{{ texto('vitrine', 'hero.titulo', 'Gostosuras feitas à mão') }}</h1>
-        <p>{{ texto('vitrine', 'hero.subtitulo', 'Brigadeiros gourmet, chocolates cremosos e docinhos que derretem no coração. Peça online e receba em casa — ou retire na loja.') }}</p>
-        <a href="#produtos" class="botao botao--chefe botao--grande">{{ texto('vitrine', 'hero.botao', 'Ver as gostosuras') }}</a>
+        <h1>{{ tema_texto('hero', 'Guloseimas feitas à mão') }}</h1>
+        <p>{{ tema_texto('hero_sub', 'Brigadeiros gourmet, chocolates cremosos e docinhos que derretem no coração. Peça online e receba em casa — ou retire na loja.') }}</p>
+        <a href="#produtos" class="botao botao--chefe botao--grande">{{ tema_texto('hero_botao', 'Ver as guloseimas') }}</a>
     </div>
 </section>
 @endif
