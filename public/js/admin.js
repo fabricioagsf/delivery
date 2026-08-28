@@ -133,12 +133,55 @@
 
         var botaoAdicionar = document.getElementById('adicionar-complemento');
         if (botaoAdicionar) {
-            botaoAdicionar.addEventListener('click', function () {
-                var modelo = document.querySelector('#lista-complementos .linha-complemento');
-                if (!modelo) return;
+            function montarLinhaVazia(idx) {
+                var container = listaComplementos;
+                var txtTipo = container.dataset.textoTipo || 'Tipo';
+                var txtAdicional = container.dataset.textoAdicional || 'Adicional (pago)';
+                var txtRemocao = container.dataset.textoRemocao || 'Remoção (grátis)';
+                var txtNome = container.dataset.textoNome || 'Nome';
+                var txtPreco = container.dataset.textoPreco || 'Preço (R$)';
+                var txtExemplo = container.dataset.textoExemplo || '';
+                var txtRemover = container.dataset.textoRemover || 'Remover';
 
-                var novaLinha = modelo.cloneNode(true);
+                var div = document.createElement('div');
+                div.className = 'linha-complemento';
+                div.setAttribute('data-linha', '');
+                div.innerHTML =
+                    '<input type="hidden" name="complementos[' + idx + '][id]" value="">' +
+                    '<input type="hidden" name="complementos[' + idx + '][ordem]" value="' + (idx * 10) + '">' +
+                    '<label class="linha-complemento__campo">' +
+                        '<span class="rotulo-mini">' + txtTipo + '</span>' +
+                        '<select name="complementos[' + idx + '][tipo]" data-campo="tipo">' +
+                            '<option value="adicional">' + txtAdicional + '</option>' +
+                            '<option value="remocao">' + txtRemocao + '</option>' +
+                        '</select>' +
+                    '</label>' +
+                    '<label class="linha-complemento__campo linha-complemento__campo--nome">' +
+                        '<span class="rotulo-mini">' + txtNome + '</span>' +
+                        '<input type="text" name="complementos[' + idx + '][nome]" maxlength="120" placeholder="' + txtExemplo + '">' +
+                    '</label>' +
+                    '<label class="linha-complemento__campo linha-complemento__campo--preco" data-campo-preco>' +
+                        '<span class="rotulo-mini">' + txtPreco + '</span>' +
+                        '<input type="number" name="complementos[' + idx + '][preco]" step="0.01" min="0">' +
+                    '</label>' +
+                    '<button type="button" class="botao-remover-linha" data-remover aria-label="' + txtRemover + '">&times;</button>';
+
+                return div;
+            }
+
+            botaoAdicionar.addEventListener('click', function () {
+                var modelo = listaComplementos.querySelector('.linha-complemento');
                 var idx = compIndex++;
+                var novaLinha;
+
+                if (!modelo) {
+                    novaLinha = montarLinhaVazia(idx);
+                    aplicarRegraPreco(novaLinha);
+                    listaComplementos.appendChild(novaLinha);
+                    return;
+                }
+
+                novaLinha = modelo.cloneNode(true);
                 novaLinha.querySelectorAll('input, select').forEach(function (campo) {
                     var nome = campo.name;
                     if (!nome) return;

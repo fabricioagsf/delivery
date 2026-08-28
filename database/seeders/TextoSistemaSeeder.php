@@ -534,6 +534,7 @@ class TextoSistemaSeeder extends Seeder
                 'menu.clientes' => 'Clientes',
                 'menu.configuracoes' => 'Configurações',
                 'menu.item_venda' => 'Produtos e serviços',
+                'menu.help' => 'Ajuda',
                 'menu.ver_loja' => 'Ver loja',
             ],
             'admin_login' => [

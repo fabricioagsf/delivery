@@ -79,11 +79,25 @@
 
             <p class="form-nota">{{ texto('admin_produtos', 'form.nota.complementos', 'Deixe o cliente escolher adicionais (pagos) ou remoções (grátis) — ex.: cobertura +R$2,00 ou "sem leite condensado".') }}</p>
 
-            <div id="lista-complementos" class="lista-complementos">
+            <div id="lista-complementos" class="lista-complementos"
+                 data-texto-tipo="{{ texto('admin_produtos', 'form.comp_tipo', 'Tipo') }}"
+                 data-texto-adicional="{{ texto('admin_produtos', 'form.comp_adicional', 'Adicional (pago)') }}"
+                 data-texto-remocao="{{ texto('admin_produtos', 'form.comp_remocao', 'Remoção (grátis)') }}"
+                 data-texto-nome="{{ texto('admin_produtos', 'form.comp_nome', 'Nome') }}"
+                 data-texto-preco="{{ texto('admin_produtos', 'form.comp_preco', 'Preço (R$)') }}"
+                 data-texto-exemplo="{{ texto('admin_produtos', 'form.comp_exemplo', 'Ex.: Cobertura de chocolate') }}"
+                 data-texto-remover="{{ texto('admin_produtos', 'form.remover_complemento', 'Remover') }}">
                 @php
                     $complementosForm = old('complementos')
                         ? collect(old('complementos'))->values()
                         : $produto->complementos;
+
+                    // Garante ao menos uma linha vazia como modelo (produto novo) para
+                    // o botão "Adicionar personalização" clonar. Linhas com nome vazio
+                    // são ignoradas no save — nenhum dado falso é criado.
+                    if ($complementosForm->isEmpty()) {
+                        $complementosForm = collect([[ 'id' => '', 'tipo' => 'adicional', 'nome' => '', 'preco' => '', 'ordem' => 0 ]]);
+                    }
                 @endphp
                 @foreach($complementosForm as $indice => $comp)
                     @include('admin.partials.complemento_linha', [

@@ -46,6 +46,9 @@
             <a href="{{ route('admin.configuracoes.index') }}" class="{{ request()->routeIs('admin.configuracoes*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.configuracoes', 'Configurações') }}
             </a>
+            <a href="{{ route('admin.help') }}" class="{{ request()->routeIs('admin.help') ? 'ativo' : '' }}">
+                {{ texto('admin_layout', 'menu.help', 'Ajuda') }}
+            </a>
         </nav>
 
         <div class="lateral__pe">

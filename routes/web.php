@@ -102,6 +102,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/item-venda', [\App\Http\Controllers\Admin\ItemVendaController::class, 'index'])->name('item-venda.index');
         Route::post('/item-venda', [\App\Http\Controllers\Admin\ItemVendaController::class, 'atualizar'])->name('item-venda.atualizar');
 
+        Route::get('/help', [\App\Http\Controllers\Admin\HelpController::class, 'index'])->name('help');
+
         Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios');
         Route::get('/relatorios/exportar', [RelatorioController::class, 'exportar'])->name('relatorios.exportar');
         Route::get('/relatorios/mensal', [RelatorioController::class, 'mensal'])->name('relatorios.mensal');
