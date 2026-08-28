@@ -24,14 +24,32 @@
     <div class="carrinho-layout">
         <ul class="lista-carrinho" id="lista-carrinho">
             @foreach($itens as $item)
-                <li class="linha-carrinho" data-produto-id="{{ $item['produto']->id }}">
+                <li class="linha-carrinho" data-chave="{{ $item['chave'] }}">
                     <div class="linha-carrinho__info">
                         <strong>{{ $item['produto']->nome }}</strong>
                         <span>{{ preco_br($item['produto']->preco) }} / un.</span>
+
+                        @if(!empty($item['complementos']))
+                            <ul class="lista-complementos-carrinho">
+                                @foreach($item['complementos'] as $c)
+                                    <li class="{{ $c['tipo'] === 'remocao' ? 'remocao' : 'adicional' }}">
+                                        @if($c['tipo'] === 'remocao')
+                                            {{ str_replace(':nome', $c['nome'], texto('carrinho', 'comp_sem', 'sem :nome')) }}
+                                        @else
+                                            {{ $c['nome'] }} (+{{ preco_br($c['preco']) }})
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+
                         @if($item['preco_mudou'])
                             <small class="aviso-preco-mudou">
                                 {{ str_replace([':de', ':para'], [preco_br($item['preco_adicionado']), preco_br($item['produto']->preco)], texto('carrinho', 'aviso.preco_mudou', 'O valor mudou desde que você adicionou (era :de). O pedido usa o valor atual: :para.')) }}
                             </small>
+                        @endif
+                        @if($item['preco_complementos_mudou'])
+                            <small class="aviso-preco-mudou">{{ texto('carrinho', 'aviso.preco_complemento', 'O preço de uma personalização mudou — o pedido usa o valor atual.') }}</small>
                         @endif
                     </div>
 

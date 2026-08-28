@@ -585,12 +585,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/fabricioagsf/item-venda.git",
-                "reference": "90d787b0fd1d6792b32282bf94e24018cfda0428"
+                "reference": "d05ac79bbcc0e0ac87a105b86a7ba61a6774e8ac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fabricioagsf/item-venda/zipball/90d787b0fd1d6792b32282bf94e24018cfda0428",
-                "reference": "90d787b0fd1d6792b32282bf94e24018cfda0428",
+                "url": "https://api.github.com/repos/fabricioagsf/item-venda/zipball/d05ac79bbcc0e0ac87a105b86a7ba61a6774e8ac",
+                "reference": "d05ac79bbcc0e0ac87a105b86a7ba61a6774e8ac",
                 "shasum": ""
             },
             "require": {
@@ -633,7 +633,7 @@
                 "source": "https://github.com/fabricioagsf/item-venda/tree/main",
                 "issues": "https://github.com/fabricioagsf/item-venda/issues"
             },
-            "time": "2026-08-26T19:48:50+00:00"
+            "time": "2026-08-28T01:28:53+00:00"
         },
         {
             "name": "fruitcake/php-cors",

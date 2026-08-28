@@ -98,4 +98,75 @@
             mudarStatus(detalheStatus.dataset.id, detalheStatus.value, detalheStatus);
         });
     }
+
+    /* -------- produto: personalizações (complementos) -------- */
+    var listaComplementos = document.getElementById('lista-complementos');
+    if (listaComplementos) {
+        var compIndex = listaComplementos.querySelectorAll('.linha-complemento').length;
+
+        function desativarPreco(linha, desativar) {
+            var campoPreco = linha.querySelector('[name$="[preco]"]');
+            if (!campoPreco) return;
+            campoPreco.disabled = desativar;
+            if (desativar) campoPreco.value = '0';
+        }
+
+        function aplicarRegraPreco(linha) {
+            var select = linha.querySelector('[data-campo="tipo"]');
+            desativarPreco(linha, select.value === 'remocao');
+        }
+
+        // Mantém coberto o campo tipo/preco mesmo com o documento já carregado
+        listaComplementos.querySelectorAll('.linha-complemento').forEach(aplicarRegraPreco);
+
+        listaComplementos.addEventListener('change', function (evento) {
+            if (evento.target.dataset.campo === 'tipo') {
+                aplicarRegraPreco(evento.target.closest('.linha-complemento'));
+            }
+        });
+
+        listaComplementos.addEventListener('click', function (evento) {
+            var botao = evento.target.closest('[data-remover]');
+            if (!botao) return;
+            botao.closest('.linha-complemento').remove();
+        });
+
+        var botaoAdicionar = document.getElementById('adicionar-complemento');
+        if (botaoAdicionar) {
+            botaoAdicionar.addEventListener('click', function () {
+                var modelo = document.querySelector('#lista-complementos .linha-complemento');
+                if (!modelo) return;
+
+                var novaLinha = modelo.cloneNode(true);
+                var idx = compIndex++;
+                novaLinha.querySelectorAll('input, select').forEach(function (campo) {
+                    var nome = campo.name;
+                    if (!nome) return;
+                    campo.name = nome.replace(/\[0\]/, '[' + idx + ']');
+                    campo.value = campo.type === 'checkbox' ? campo.value : '';
+                });
+                novaLinha.querySelector('[name$="[tipo]"]').value = 'adicional';
+                desativarPreco(novaLinha, false);
+                listaComplementos.appendChild(novaLinha);
+            });
+        }
+    }
+
+    // Copiar link do cardápio digital
+    var botaoCardapioCopiar = document.querySelector('[data-copiar-cardapio]');
+    if (botaoCardapioCopiar) {
+        botaoCardapioCopiar.addEventListener('click', function () {
+            navigator.clipboard?.writeText(botaoCardapioCopiar.dataset.copiarCardapio || '')
+                .then(function () {
+                    var original = botaoCardapioCopiar.textContent;
+                    botaoCardapioCopiar.textContent = 'Copiado!';
+                    setTimeout(function () { botaoCardapioCopiar.textContent = original; }, 2000);
+                })
+                .catch(function () {
+                    // fallback: seleciona o input ao lado
+                    var url = botaoCardapioCopiar.parentElement.querySelector('input');
+                    if (url) { url.select(); }
+                });
+        });
+    }
 })();

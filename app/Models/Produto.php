@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\Auditoravel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Produto extends Model
 {
@@ -37,6 +38,16 @@ class Produto extends Model
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(Categoria::class);
+    }
+
+    public function complementos(): HasMany
+    {
+        return $this->hasMany(ProdutoComplemento::class)->orderBy('ordem')->orderBy('id');
+    }
+
+    public function complementosAtivos(): HasMany
+    {
+        return $this->complementos()->where('ativo', true);
     }
 
     public function scopeAtivos($query)

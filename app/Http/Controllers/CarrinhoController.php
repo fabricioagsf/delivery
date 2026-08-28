@@ -25,9 +25,11 @@ class CarrinhoController extends Controller
         $dados = $request->validate([
             'produto_id' => ['required', 'integer'],
             'quantidade' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'complementos' => ['nullable', 'array'],
+            'complementos.*' => ['integer'],
         ]);
 
-        $produto = Produto::ativos()->find($dados['produto_id']);
+        $produto = Produto::ativos()->with('complementosAtivos')->find($dados['produto_id']);
 
         if (! $produto) {
             return response()->json([
@@ -36,6 +38,24 @@ class CarrinhoController extends Controller
         }
 
         $quantidade = (int) ($dados['quantidade'] ?? 1);
+
+        // Complementos escolhidos devem pertencer a este produto e estar ativos
+        $idsEscolhidos = array_unique(array_map('intval', $dados['complementos'] ?? []));
+        $complementos = $produto->complementosAtivos->whereIn('id', $idsEscolhidos)->values();
+
+        if (count($idsEscolhidos) !== count($complementos)) {
+            return response()->json([
+                'mensagem' => texto('carrinho', 'erro.complemento_invalido', 'Uma das personalizações escolhidas não está mais disponível.'),
+            ], 422);
+        }
+
+        $snapshot = $complementos->map(fn ($c) => [
+            'complemento_id' => $c->id,
+            'tipo' => $c->tipo,
+            'nome' => $c->nome,
+            'preco' => (float) $c->preco,
+        ])->values()->all();
+
         $noCarrinho = $this->carrinho->quantidadeDe($produto->id);
         $totalDesejado = $noCarrinho + $quantidade;
 
@@ -60,7 +80,7 @@ class CarrinhoController extends Controller
             ], 422);
         }
 
-        $this->carrinho->adicionar($produto, $quantidade);
+        $this->carrinho->adicionar($produto, $quantidade, $snapshot);
 
         return response()->json([
             'mensagem' => texto('carrinho', 'sucesso.adicionado', 'Adicionado ao carrinho!'),
@@ -72,21 +92,30 @@ class CarrinhoController extends Controller
     public function atualizar(Request $request): JsonResponse
     {
         $dados = $request->validate([
-            'produto_id' => ['required', 'integer'],
+            'chave' => ['required', 'string'],
             'quantidade' => ['required', 'integer', 'min:0', 'max:99'],
         ]);
 
-        if ($dados['quantidade'] > 0) {
-            $produto = Produto::ativos()->find($dados['produto_id']);
+        $itens = $this->carrinho->itens();
+        $linha = collect($itens)->firstWhere('chave', $dados['chave']);
 
-            if (! $produto || ! $produto->temEstoque((int) $dados['quantidade'])) {
+        if ($dados['quantidade'] > 0) {
+            if (! $linha) {
+                return response()->json([
+                    'mensagem' => texto('carrinho', 'erro.produto_indisponivel', 'Produto indisponível.'),
+                ], 404);
+            }
+
+            $produto = $linha['produto'];
+
+            if (! $produto->temEstoque((int) $dados['quantidade'])) {
                 return response()->json([
                     'mensagem' => texto('carrinho', 'erro.estoque_insuficiente', 'Estoque insuficiente.'),
                 ], 422);
             }
         }
 
-        $this->carrinho->atualizar((int) $dados['produto_id'], (int) $dados['quantidade']);
+        $this->carrinho->atualizar($dados['chave'], (int) $dados['quantidade']);
 
         return response()->json([
             'contagem' => $this->carrinho->contagem(),
@@ -98,10 +127,10 @@ class CarrinhoController extends Controller
     public function remover(Request $request): JsonResponse
     {
         $dados = $request->validate([
-            'produto_id' => ['required', 'integer'],
+            'chave' => ['required', 'string'],
         ]);
 
-        $this->carrinho->remover((int) $dados['produto_id']);
+        $this->carrinho->remover($dados['chave']);
 
         return response()->json([
             'mensagem' => texto('carrinho', 'sucesso.removido', 'Item removido.'),

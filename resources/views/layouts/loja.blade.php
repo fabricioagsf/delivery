@@ -17,6 +17,9 @@
         </a>
 
         <nav class="topo__acoes">
+            <a href="{{ route('cardapio') }}" class="botao-botao-conta">
+                <span>{{ texto('layout', 'menu.cardapio', 'Cardápio') }}</span>
+            </a>
             <button type="button" class="botao-botao-conta" id="abrir-conta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v3h16v-3c0-3-4-5-8-5Z"/></svg>
                 <span>{{ auth('cliente')->check() ? texto('layout','menu.conta','Minha conta') : texto('layout','menu.conta_entrar','Entrar') }}</span>
@@ -67,6 +70,7 @@
 </footer>
 
 @include('partials.drawer')
+@include('partials.modal-personalizar')
 
 <script>
     window.Rotas = {
@@ -97,6 +101,10 @@
         pedidoVazio: '{{ texto('conta', 'js.pedido_vazio', 'Você ainda não fez pedidos.') }}',
         erroInesperado: '{{ texto('conta', 'js.erro_inesperado', 'Algo saiu do ponto. Tente novamente.') }}',
         avisoAtualizacao: '{{ texto('vitrine', 'js.aviso_atualizacao', 'Valores e estoque acabaram de atualizar — vitrine renovada!') }}',
+        modalAdicionais: '{{ texto('vitrine', 'modal.adicionais', 'Adicionais') }}',
+        modalRemocoes: '{{ texto('vitrine', 'modal.remocoes', 'Remoções (grátis)') }}',
+        modalCada: '{{ texto('vitrine', 'modal.cada', 'cada') }}',
+        modalVazio: '{{ texto('vitrine', 'modal.vazio', 'Este produto não tem personalizações no momento.') }}',
         portaSenhaTitulo: '{{ texto('conta', 'porta.senha_titulo', 'Troque sua senha para continuar') }}',
         portaSenhaNota: '{{ texto('conta', 'porta.senha_nota', 'Você entrou com a senha temporária. Crie uma nova senha de pelo menos 6 caracteres para usar nos próximos acessos.') }}',
         portaCompletarTitulo: '{{ texto('conta', 'porta.completar_titulo', 'Falta pouco para terminar seu cadastro') }}',

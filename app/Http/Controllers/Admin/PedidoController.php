@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NotaFiscal;
 use App\Models\Pedido;
 use App\Models\Produto;
+use App\Services\WhatsApp;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -115,5 +116,90 @@ class PedidoController extends Controller
         ]);
 
         return back()->with('sucesso_nota', texto('admin_pedidos', 'nota.criada', 'Nota fiscal registrada como PENDENTE para este pedido.'));
+    }
+
+    /**
+     * Encaminha o resumo do pedido ao cliente via WhatsApp.
+     * Usa a Cloud API quando configurada; senão, devolve um link wa.me
+     * pré-preenchido para o lojista abrir no navegador/janela do WhatsApp.
+     */
+    public function enviarWhatsApp(Pedido $pedido): RedirectResponse
+    {
+        $telefone = $pedido->telefone;
+
+        if (empty($telefone)) {
+            return back()->with('erro_whatsapp', texto('admin_pedidos', 'whatsapp.sem_telefone', 'Este pedido não tem telefone de contato.'));
+        }
+
+        $whatsapp = app(WhatsApp::class);
+        $mensagem = $this->montarMensagemPedido($pedido);
+
+        if (! $whatsapp->disponivel()) {
+            $link = $whatsapp->linkWhatsapp($telefone, $mensagem);
+
+            return back()
+                ->with('whatsapp_link', $link)
+                ->with('sucesso_whatsapp', texto('admin_pedidos', 'whatsapp.link_gerado', 'WhatsApp não configurado — abra o link abaixo para enviar o pedido.'));
+        }
+
+        $resultado = $whatsapp->enviarTexto($telefone, $mensagem);
+
+        if ($resultado['ok']) {
+            return back()->with('sucesso_whatsapp', texto('admin_pedidos', 'whatsapp.enviado', 'Pedido encaminhado ao cliente pelo WhatsApp!'));
+        }
+
+        $link = $whatsapp->linkWhatsapp($telefone, $mensagem);
+
+        return back()
+            ->with('whatsapp_link', $link)
+            ->with('erro_whatsapp', ($resultado['erro'] ?? '').' '.texto('admin_pedidos', 'whatsapp.fallback', 'Use o link abaixo para enviar manualmente.'));
+    }
+
+    protected function montarMensagemPedido(Pedido $pedido): string
+    {
+        $linhas = [];
+
+        $linhas[] = '*'.texto('admin_pedidos', 'whatsapp.pedido_rotulo', 'Pedido').': '.$pedido->codigo.'*';
+        $linhas[] = texto('admin_pedidos', 'whatsapp.cliente', 'Cliente').': '.$pedido->nome_cliente;
+        $linhas[] = texto('admin_pedidos', 'whatsapp.telefone', 'Telefone').': '.$pedido->telefone;
+        $linhas[] = texto('admin_pedidos', 'whatsapp.tipo', 'Tipo').': '.
+            ($pedido->tipo_entrega === 'entrega'
+                ? texto('confirmacao', 'entrega.titulo', 'Entrega')
+                : texto('confirmacao', 'retirada.titulo', 'Retirada'));
+        $linhas[] = texto('admin_pedidos', 'whatsapp.pagamento', 'Pagamento').': '.forma_pagamento_label($pedido->forma_pagamento);
+
+        if ($pedido->tipo_entrega === 'entrega') {
+            $linhas[] = texto('admin_pedidos', 'whatsapp.endereco', 'Endereço').': '.
+                $pedido->rua.', '.$pedido->numero.($pedido->complemento ? ' — '.$pedido->complemento : '').
+                ' — '.$pedido->bairro.' '.$pedido->cidade;
+        }
+
+        $linhas[] = '';
+
+        foreach ($pedido->itens as $item) {
+            $linha = '- '.$item->quantidade."\u{00d7} ".$item->nome_produto;
+            $adicionais = 0.0;
+
+            foreach ($item->complementos ?? [] as $c) {
+                $ehAdicional = ($c['tipo'] ?? 'adicional') === 'adicional';
+                if ($ehAdicional) {
+                    $adicionais += (float) ($c['preco'] ?? 0);
+                    $linha .= "\n    \u{2022} ".($c['nome'] ?? '').' (+'.preco_br($c['preco'] ?? 0).')';
+                } else {
+                    $linha .= "\n    \u{2022} ".str_replace(':nome', $c['nome'] ?? '', texto('carrinho', 'comp_sem', 'sem :nome'));
+                }
+            }
+
+            $linhas[] = $linha.' = '.preco_br($item->subtotal());
+        }
+
+        $linhas[] = '';
+        $linhas[] = texto('admin_pedidos', 'whatsapp.total', 'Total').': '.preco_br($pedido->total);
+
+        if ($pedido->observacoes) {
+            $linhas[] = texto('checkout', 'campo.observacoes', 'Observações').': '.$pedido->observacoes;
+        }
+
+        return implode("\n", $linhas);
     }
 }

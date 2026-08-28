@@ -186,6 +186,7 @@
                     <li>
                         <span>{{ $item['quantidade'] }}× {{ $item['produto']->nome }}</span>
                         <strong>{{ preco_br($item['subtotal']) }}</strong>
+                        @include('partials.complementos_linha', ['complementos' => $item['complementos'] ?? []])
                     </li>
                 @endforeach
             </ul>

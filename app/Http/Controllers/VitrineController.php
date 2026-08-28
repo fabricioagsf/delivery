@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Banner;
 use App\Models\Categoria;
 use App\Models\Produto;
+use App\Models\ProdutoComplemento;
 use Illuminate\Http\Request;
 
 class VitrineController extends Controller
@@ -20,7 +21,7 @@ class VitrineController extends Controller
             ->get();
 
         $produtos = Produto::ativos()
-            ->with('categoria:id,nome,slug')
+            ->with(['categoria:id,nome,slug', 'complementosAtivos'])
             ->when(
                 $slugCategoria,
                 fn ($q) => $q->whereHas(
@@ -35,6 +36,7 @@ class VitrineController extends Controller
         // Destaques só fazem sentido na vitrine sem filtro (comportamento fixo).
         $destaques = Produto::ativos()
             ->where('destaque', true)
+            ->with('complementosAtivos')
             ->orderBy('nome')
             ->take(4)
             ->get();
@@ -75,8 +77,17 @@ class VitrineController extends Controller
             ->orderBy('id')
             ->get(['id', 'preco', 'estoque'])
             ->map(fn ($p) => $p->id.':'.$p->preco.':'.($p->estoque ?? 'x'))
-            ->implode('|');
+            ->join('|');
 
-        return response()->json(['hash' => md5($impressao)]);
+        // Complementos também entram no hash: preço/nome mudando deve
+        // renovar a vitrine para o comprador nunca escolher valor velho.
+        $compImpressao = ProdutoComplemento::whereHas('produto', fn ($q) => $q->where('ativo', true))
+            ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('produto_id', $ids->all()))
+            ->orderBy('id')
+            ->get(['id', 'produto_id', 'tipo', 'nome', 'preco', 'ativo'])
+            ->map(fn ($c) => $c->id.':'.$c->produto_id.':'.$c->tipo.':'.$c->nome.':'.$c->preco.':'.($c->ativo ? '1' : '0'))
+            ->join('|');
+
+        return response()->json(['hash' => md5($impressao.'#'.$compImpressao)]);
     }
 }

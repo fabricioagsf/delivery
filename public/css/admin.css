@@ -549,3 +549,69 @@ td { vertical-align: middle; }
     font-size: 12.5px;
     word-break: break-all;
 }
+
+/* ---------------- Personalizações (complementos) ---------------- */
+.form-admin .form-nota { font-size: .86rem; font-weight: 500; color: #7a5338; line-height: 1.6; margin-top: -2px; }
+.lista-complementos { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 16px; }
+.linha-complemento {
+    display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+    border: 2px solid var(--creme-forte); border-radius: 14px; padding: 12px; background: #fffdfa;
+}
+.linha-complemento__campo { flex: 1 1 180px; margin-bottom: 0; }
+.linha-complemento__campo--nome { flex: 2 1 240px; }
+.linha-complemento__campo--preco { flex: 0 1 130px; }
+.rotulo-mini {
+    display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--cor-link, #a8602f); margin-bottom: 3px; font-weight: 700;
+}
+.botao-remover-linha {
+    flex: 0 0 auto; width: 38px; height: 38px; border: 2px solid #f0c8b8; border-radius: 50%;
+    background: #fff3ec; color: #b3261e; font-size: 1.4rem; line-height: 1; cursor: pointer; font-weight: 700;
+}
+.botao-remover-linha:hover { background: #ffe3d8; }
+
+/* ---------------- Complementos inline (painel) ---------------- */
+.lista-complementos-inline { list-style: none; margin: 4px 0 0; padding: 0; font-size: .82rem; }
+.lista-complementos-inline li { color: var(--cor-primaria-texto, #743312); }
+.lista-complementos-inline li.adicional { color: var(--cor-link, #d96b43); font-weight: 600; }
+.lista-complementos-inline li.remocao { color: #8a6a52; }
+
+/* ---------------- Cardápio digital (configurações) ---------------- */
+.config-cardapio {
+    display: flex;
+    gap: 26px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    background: #fffdfa;
+    border: 2px solid var(--creme-forte);
+    border-left: 6px solid var(--cor-primaria, #ffb59c);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 22px;
+}
+.config-cardapio__texto { flex: 1 1 300px; }
+.config-cardapio__texto h2 { margin: 0 0 6px; color: var(--cor-primaria-texto, #743312); }
+.config-cardapio__texto p { max-width: 480px; line-height: 1.6; color: #7a5338; }
+.config-cardapio__display {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px;
+}
+.config-cardapio__url {
+    flex: 1 1 240px;
+    padding: 9px 12px;
+    border: 2px solid var(--creme-forte);
+    border-radius: 10px;
+    font-size: .9rem;
+    background: #fff;
+    color: var(--cor-link, #a8602f);
+}
+.config-cardapio__qr {
+    flex: 0 0 220px;
+    text-align: center;
+    background: #fff;
+    border: 2px solid var(--creme-forte);
+    border-radius: 14px;
+    padding: 16px;
+}
+.config-cardapio__qr img { border-radius: 8px; max-width: 100%; }
+.config-cardapio__qr p { font-size: .82rem; max-width: 200px; margin: 10px auto 0; }
+

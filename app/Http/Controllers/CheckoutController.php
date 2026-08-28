@@ -126,6 +126,7 @@ class CheckoutController extends Controller
                     'produto_id' => $item['produto']->id,
                     'nome_produto' => $item['produto']->nome,
                     'preco_unitario' => $item['produto']->preco,
+                    'complementos' => $item['complementos'] ?: null,
                     'quantidade' => $item['quantidade'],
                 ]);
             }

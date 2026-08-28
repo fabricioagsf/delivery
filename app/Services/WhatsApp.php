@@ -28,6 +28,21 @@ class WhatsApp
     }
 
     /**
+     * Link wa.me como fallback quando a API não está disponível/ativa.
+     * O texto é pré-preenchido; quem usa só precisa abrir e enviar.
+     */
+    public function linkWhatsapp(string $telefone, string $mensagem): string
+    {
+        $digitos = preg_replace('/\D/', '', $telefone);
+
+        if (strlen($digitos) <= 11) {
+            $digitos = '55'.$digitos;
+        }
+
+        return 'https://wa.me/'.$digitos.'?text='.rawurlencode($mensagem);
+    }
+
+    /**
      * @return array{ok: bool, erro: ?string}
      */
     public function enviarTexto(string $telefone, string $mensagem): array

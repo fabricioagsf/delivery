@@ -8,6 +8,25 @@
     <div class="alerta alerta--sucesso">{{ session('sucesso_config') }}</div>
 @endif
 
+{{-- ======================== CARDÁPIO DIGITAL ======================== --}}
+@php $urlCardapio = route('cardapio'); @endphp
+<section class="config-cardapio">
+    <div class="config-cardapio__texto">
+        <h2>{{ texto('admin_config', 'secao.cardapio', 'Cardápio digital') }}</h2>
+        <p>{{ texto('admin_config', 'nota.cardapio', 'Este é o seu cardápio digital aberto a todos os clientes. Ele mostra os produtos ativos, organizados por categoria, e permite pedir direto de lá (mesmo carrinho e checkout da loja).') }}</p>
+        <a href="{{ $urlCardapio }}" target="_blank" rel="noopener" class="botao botao--chefe">{{ texto('admin_config', 'cardapio.ver', 'Ver cardápio') }}</a>
+        <div class="config-cardapio__display">
+            <input type="text" readonly value="{{ $urlCardapio }}" class="config-cardapio__url" onclick="this.select()" aria-label="{{ texto('admin_config', 'cardapio.url_rotulo', 'Link do cardápio') }}">
+            <button type="button" class="mini-botao mini-botao--salvar" data-copiar-cardapio="{{ $urlCardapio }}">{{ texto('admin_config', 'cardapio.copiar', 'Copiar link') }}</button>
+        </div>
+    </div>
+    <div class="config-cardapio__qr">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data={{ urlencode($urlCardapio) }}"
+             alt="{{ texto('admin_config', 'cardapio.qr_alt', 'QR code do cardápio digital') }}" width="220" height="220" loading="lazy">
+        <p class="texto-suave">{{ texto('admin_config', 'cardapio.qr_nota', 'Imprima e coloque na mesa ou balcão: o cliente aponta a câmera e abre o cardápio.') }}</p>
+    </div>
+</section>
+
 <form method="POST" action="{{ route('admin.configuracoes.salvar') }}" class="form-admin">
     @csrf
 

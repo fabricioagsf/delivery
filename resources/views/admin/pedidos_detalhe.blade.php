@@ -4,6 +4,17 @@
 @section('titulo_pagina', str_replace(':codigo', $pedido->codigo, texto('admin_pedidos', 'titulo.detalhe', 'Pedido :codigo')))
 
 @section('conteudo')
+@if(session('sucesso_whatsapp'))
+    <div class="alerta alerta--sucesso">{{ session('sucesso_whatsapp') }}</div>
+@endif
+@if(session('erro_whatsapp'))
+    <div class="alerta alerta--erro">{{ session('erro_whatsapp') }}</div>
+@endif
+@if(session('whatsapp_link'))
+    <div class="alerta alerta--sucesso">
+        <a href="{{ session('whatsapp_link') }}" target="_blank" rel="noopener" class="botao">{{ texto('admin_pedidos', 'whatsapp.abrir_link', 'Abrir no WhatsApp') }}</a>
+    </div>
+@endif
 <div class="duas-colunas">
     <section class="painel-admin">
         <h2>{{ texto('admin_pedidos', 'detalhe.resumo_titulo', 'Resumo') }}</h2>
@@ -24,10 +35,13 @@
             <tbody>
             @foreach($pedido->itens as $item)
                 <tr>
-                    <td>{{ $item->nome_produto }}</td>
+                    <td>
+                        {{ $item->nome_produto }}
+                        @include('partials.complementos_linha', ['complementos' => $item->complementos ?? []])
+                    </td>
                     <td>{{ $item->quantidade }}</td>
                     <td>{{ preco_br($item->preco_unitario) }}</td>
-                    <td>{{ preco_br($item->preco_unitario * $item->quantidade) }}</td>
+                    <td>{{ preco_br($item->subtotal()) }}</td>
                 </tr>
             @endforeach
             </tbody>
@@ -96,6 +110,15 @@
             @if($pedido->status !== 'cancelado')
                 <p class="nota-segura nota-segura--admin">{{ texto('admin_pedidos', 'detalhe.cancelar_aviso', 'Cancelar devolve os itens ao estoque automaticamente.') }}</p>
             @endif
+        </section>
+
+        <section class="painel-admin margem-topo">
+            <h2>{{ texto('admin_pedidos', 'whatsapp.titulo', 'WhatsApp do cliente') }}</h2>
+            <p class="texto-suave">{{ texto('admin_pedidos', 'whatsapp.nota', 'Encaminhe o resumo do pedido ao cliente para confirmar. Usa o WhatsApp da loja quando configurado; senão, gera um link.') }}</p>
+            <form method="POST" action="{{ route('admin.pedidos.whatsapp', $pedido) }}" class="margem-topo">
+                @csrf
+                <button type="submit" class="botao botao--chefe bloco">{{ texto('admin_pedidos', 'whatsapp.botao', 'Encaminhar pedido no WhatsApp') }}</button>
+            </form>
         </section>
 
         <section class="painel-admin margem-topo">

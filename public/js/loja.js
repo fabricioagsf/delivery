@@ -92,23 +92,156 @@
     }
 
     /* adicionar à sacola na vitrine */
-    document.querySelectorAll('.botao-adicionar').forEach(function (botao) {
-        botao.addEventListener('click', function () {
-            botao.disabled = true;
-            requisitar(Rotas.carrinhoAdicionar, 'POST', {
-                produto_id: Number(botao.dataset.produtoId)
-            }).then(function (r) {
+    function adicionarAoCarrinho(produtoId, complementos, botao, quantidade) {
+        if (botao) botao.disabled = true;
+        var req = { produto_id: Number(produtoId), complementos: complementos || [], quantidade: Number(quantidade) || 1 };
+
+        return requisitar(Rotas.carrinhoAdicionar, 'POST', req)
+            .then(function (r) {
                 atualizarSelo(r.contagem);
                 toast(r.mensagem);
-            }).catch(function (e) {
+            })
+            .catch(function (e) {
                 // Gatilho de atualização: admin mexeu em valor/estoque agora
                 if (e.corpo && e.corpo.atualizar_vitrine && typeof carregarResultados === 'function') {
                     carregarResultados(window.location.href, false);
                 }
                 toast(e.message, 'erro');
-            }).finally(function () { botao.disabled = false; });
-        });
+            })
+            .finally(function () { if (botao) botao.disabled = false; });
+    }
+
+    // Delegação: vale para os cards injetados pelo filtro de categoria (AJAX)
+    document.addEventListener('click', function (evento) {
+        var direto = evento.target.closest('[data-adicionar-direto]');
+        if (direto) { adicionarAoCarrinho(direto.dataset.produtoId, [], direto); return; }
+
+        var personalizar = evento.target.closest('[data-modal-personalizar]');
+        if (personalizar) {
+            abrirModalPersonalizar(evento.target.closest('[data-complementos]'));
+        }
     });
+
+    /* ---------------- modal de personalização ---------------- */
+    var modal = document.getElementById('modal-personalizar');
+    var modalTitulo, modalBase, modalCorpo, modalQtdValor, modalTotal;
+
+    function montarModal(artigo) {
+        var complementos;
+        try { complementos = JSON.parse(artigo.dataset.complementos || '[]'); } catch (e) { complementos = []; }
+
+        return {
+            produtoId: Number(artigo.dataset.produtoId),
+            nome: artigo.dataset.produtoNome,
+            precoBase: Number(artigo.dataset.produtoPreco) || 0,
+            adicionais: complementos.filter(function (c) { return c.tipo === 'adicional'; }),
+            remocoes: complementos.filter(function (c) { return c.tipo === 'remocao'; })
+        };
+    }
+
+    function formatarMoeda(valor) {
+        return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function abrirModalPersonalizar(artigo) {
+        if (!modal || !artigo) return;
+        var dados = montarModal(artigo);
+
+        modalTitulo = modal.querySelector('#modal-personalizar-titulo');
+        modalBase = modal.querySelector('.modal-personalizar__base');
+        modalCorpo = modal.querySelector('#modal-personalizar-corpo');
+        modalQtdValor = modal.querySelector('[data-qtd="valor"]');
+        modalTotal = modal.querySelector('[data-total]');
+
+        modal.dataset.precoBase = dados.precoBase;
+        modal.dataset.nome = dados.nome;
+        modal.dataset.produtoId = dados.produtoId;
+
+        modalTitulo.textContent = dados.nome;
+        modalBase.textContent = formatarMoeda(dados.precoBase);
+        modalQtdValor.textContent = '1';
+
+        var html = '';
+        if (dados.adicionais.length) {
+            html += '<h3>' + Textos.modalAdicionais + '</h3>';
+            dados.adicionais.forEach(function (c) {
+                html += '<label class="modal-personalizar__opcao">' +
+                    '<input type="checkbox" data-tipo="adicional" data-preco="' + c.preco + '" value="' + c.id + '">' +
+                    '<span>' + escapar(c.nome) + '</span>' +
+                    '<small>(+' + formatarMoeda(c.preco) + ' ' + Textos.modalCada + ')</small>' +
+                    '</label>';
+            });
+        }
+        if (dados.remocoes.length) {
+            html += '<h3>' + Textos.modalRemocoes + '</h3>';
+            dados.remocoes.forEach(function (c) {
+                html += '<label class="modal-personalizar__opcao">' +
+                    '<input type="checkbox" data-tipo="remocao" data-preco="0" value="' + c.id + '">' +
+                    '<span>' + escapar(c.nome) + '</span>' +
+                    '<small>' + (c.tipo === 'remocao' ? Textos.modalCada : '') + '</small>' +
+                    '</label>';
+            });
+        }
+        if (!dados.adicionais.length && !dados.remocoes.length) {
+            html = '<p class="modal-personalizar__vazio">' + Textos.modalVazio + '</p>';
+            document.querySelector('[data-confirmar]').disabled = true;
+        } else {
+            document.querySelector('[data-confirmar]').disabled = false;
+        }
+
+        modalCorpo.innerHTML = html;
+        calcularTotalModal();
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function calcularTotalModal() {
+        if (!modal) return;
+        var qtd = Number(modalQtdValor.textContent) || 1;
+        var base = Number(modal.dataset.precoBase) || 0;
+        var extra = 0;
+
+        modalCorpo.querySelectorAll('input[data-tipo="adicional"]:checked').forEach(function (el) {
+            extra += Number(el.dataset.preco) || 0;
+        });
+
+        modalTotal.textContent = formatarMoeda((base + extra) * qtd);
+    }
+
+    function fecharModalPersonalizar() {
+        if (!modal) return;
+        modal.hidden = true;
+        document.body.style.overflow = '';
+    }
+
+    if (modal) {
+        modal.addEventListener('click', function (evento) {
+            if (evento.target.closest('[data-fechar]')) fecharModalPersonalizar();
+        });
+
+        modal.querySelectorAll('[data-qtd]').forEach(function (botao) {
+            botao.addEventListener('click', function () {
+                var qtd = Number(modalQtdValor.textContent) || 1;
+                qtd = botao.dataset.qtd === 'mais' ? qtd + 1 : Math.max(1, qtd - 1);
+                modalQtdValor.textContent = qtd;
+                calcularTotalModal();
+            });
+        });
+
+        modalCorpo = modal.querySelector('#modal-personalizar-corpo');
+        if (modalCorpo) {
+            modalCorpo.addEventListener('change', function () { calcularTotalModal(); });
+        }
+
+        modal.querySelector('[data-confirmar]').addEventListener('click', function (botaoEvento) {
+            var botao = botaoEvento.target;
+            var ids = [];
+            modalCorpo.querySelectorAll('input:checked').forEach(function (el) { ids.push(Number(el.value)); });
+
+            adicionarAoCarrinho(Number(modal.dataset.produtoId) || null, ids, botao, Number(modalQtdValor.textContent) || 1)
+                .then(function () { fecharModalPersonalizar(); });
+        });
+    }
 
     /* página do carrinho */
     var listaCarrinho = document.getElementById('lista-carrinho');
@@ -118,12 +251,12 @@
             if (!alvo) return;
 
             var linha = alvo.closest('.linha-carrinho');
-            var produtoId = Number(linha.dataset.produtoId);
+            var chave = linha.dataset.chave;
             var acao = alvo.dataset.acao;
             var valorEl = linha.querySelector('.contador__valor');
 
             if (acao === 'remover') {
-                requisitar(Rotas.carrinhoRemover, 'POST', { produto_id: produtoId })
+                requisitar(Rotas.carrinhoRemover, 'POST', { chave: chave })
                     .then(function (r) {
                         linha.remove();
                         aposMudanca(r);
@@ -134,7 +267,7 @@
 
             var quantidade = Number(valorEl.textContent) + (acao === 'aumentar' ? 1 : -1);
             requisitar(Rotas.carrinhoAtualizar, 'POST', {
-                produto_id: produtoId,
+                chave: chave,
                 quantidade: Math.max(0, quantidade)
             }).then(function (r) {
                 if (quantidade <= 0) { linha.remove(); }
@@ -149,7 +282,6 @@
             if (resumoSubtotal && r.subtotal !== undefined) resumoSubtotal.textContent = r.subtotal;
 
             document.querySelectorAll('.linha-carrinho').forEach(function (linha) {
-                var id = Number(linha.dataset.produtoId);
                 var btnMais = linha.querySelector('[data-acao="aumentar"]');
                 if (btnMais) btnMais.disabled = false;
             });
@@ -236,7 +368,7 @@
 
         function checarVersao() {
             var ids = Array.prototype.map.call(
-                areaProdutos.querySelectorAll('.botao-adicionar'),
+                areaProdutos.querySelectorAll('[data-modal-personalizar], [data-adicionar-direto]'),
                 function (b) { return b.dataset.produtoId; }
             ).join(',');
 

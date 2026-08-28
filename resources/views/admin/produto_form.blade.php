@@ -75,6 +75,30 @@
         </fieldset>
 
         <fieldset class="secao-form">
+            <legend>{{ texto('admin_produtos', 'form.secao.complementos', 'Personalizações (opcional)') }}</legend>
+
+            <p class="form-nota">{{ texto('admin_produtos', 'form.nota.complementos', 'Deixe o cliente escolher adicionais (pagos) ou remoções (grátis) — ex.: cobertura +R$2,00 ou "sem leite condensado".') }}</p>
+
+            <div id="lista-complementos" class="lista-complementos">
+                @php
+                    $complementosForm = old('complementos')
+                        ? collect(old('complementos'))->values()
+                        : $produto->complementos;
+                @endphp
+                @foreach($complementosForm as $indice => $comp)
+                    @include('admin.partials.complemento_linha', [
+                        'indice' => $indice,
+                        'comp' => (object) $comp,
+                    ])
+                @endforeach
+            </div>
+
+            <button type="button" class="botao" id="adicionar-complemento">
+                {{ texto('admin_produtos', 'form.botao_adicionar_complemento', '+ Adicionar personalização') }}
+            </button>
+        </fieldset>
+
+        <fieldset class="secao-form">
             <legend>{{ texto('admin_produtos', 'form.secao.exibicao', 'Exibição na vitrine') }}</legend>
 
             <label class="caixa-marcar">

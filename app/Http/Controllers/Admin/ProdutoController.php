@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Produto;
+use App\Models\ProdutoComplemento;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,8 @@ class ProdutoController extends Controller
         $dados['slug'] = $this->slugUnico($dados['nome']);
         $dados['imagem'] = $this->salvarImagem($request);
 
-        Produto::create($dados);
+        $produto = Produto::create($dados);
+        $this->sincronizarComplementos($produto, $request);
 
         return redirect()
             ->route('admin.produtos.index')
@@ -37,6 +39,8 @@ class ProdutoController extends Controller
 
     public function edit(Produto $produto): View
     {
+        $produto->load('complementos');
+
         return view('admin.produto_form', [
             'produto' => $produto,
             'categorias' => $this->categorias(),
@@ -52,6 +56,7 @@ class ProdutoController extends Controller
         }
 
         $produto->update($dados);
+        $this->sincronizarComplementos($produto, $request);
 
         return redirect()
             ->route('admin.produtos.index')
@@ -83,6 +88,12 @@ class ProdutoController extends Controller
             'estoque_minimo' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'destaque' => ['nullable', 'boolean'],
             'ativo' => ['nullable', 'boolean'],
+            'complementos' => ['nullable', 'array'],
+            'complementos.*.id' => ['nullable', 'integer'],
+            'complementos.*.tipo' => ['nullable', 'in:'.implode(',', ProdutoComplemento::TIPOS)],
+            'complementos.*.nome' => ['nullable', 'string', 'max:120'],
+            'complementos.*.preco' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'complementos.*.ordem' => ['nullable', 'integer', 'min:0'],
         ], [
             'required' => texto('admin_produtos', 'erro.campo_obrigatorio', 'Preencha este campo.'),
             'categoria_id.exists' => texto('admin_produtos', 'erro.categoria', 'Escolha uma categoria válida.'),
@@ -135,6 +146,58 @@ class ProdutoController extends Controller
         $arquivo->move($pasta, $nome);
 
         return 'img/produtos/'.$nome;
+    }
+
+    /**
+     * Sincroniza as personalizações (complementos) do produto vindas do form.
+     * Regras:
+     *  - LInhas em branco (nome vazio) são ignoradas;
+     *  - Remoção é sempre gratuita (preço forçado a 0);
+     *  - Linhas novas ganham id; linhas removidas são apagadas.
+     */
+    protected function sincronizarComplementos(Produto $produto, Request $request): void
+    {
+        $linhas = $request->input('complementos', []);
+        $existentes = ProdutoComplemento::where('produto_id', $produto->id)->get()->keyBy('id');
+        $mantidos = [];
+
+        foreach ((array) $linhas as $indice => $linha) {
+            $linha = (array) $linha;
+            $nome = trim((string) ($linha['nome'] ?? ''));
+
+            if ($nome === '') {
+                continue;
+            }
+
+            $tipo = in_array($linha['tipo'] ?? null, ProdutoComplemento::TIPOS, true) ? $linha['tipo'] : 'adicional';
+            $preco = $tipo === 'remocao' ? 0.0 : (float) ($linha['preco'] ?? 0);
+            $ordem = (int) ($linha['ordem'] ?? $indice * 10);
+
+            $dados = [
+                'tipo' => $tipo,
+                'nome' => $nome,
+                'preco' => round($preco, 2),
+                'ordem' => $ordem,
+                'ativo' => true,
+            ];
+
+            $id = $linha['id'] ?? null;
+            if ($id && isset($existentes[$id])) {
+                $existentes[$id]->update($dados);
+                $mantidos[] = (int) $id;
+            } else {
+                $criado = $produto->complementos()->create($dados);
+                $mantidos[] = (int) $criado->id;
+            }
+        }
+
+        // Remove personalizações que sumiram do form (nunca nascem em pedidos passados —
+        // são apenas opções do catálogo, seguras de apagar).
+        foreach ($existentes as $id => $complemento) {
+            if (! in_array((int) $id, $mantidos, true)) {
+                $complemento->delete();
+            }
+        }
     }
 
     public function index(Request $request): View

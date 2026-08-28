@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\RelatorioController;
 use App\Http\Controllers\Admin\SairController as AdminSairController;
 use App\Http\Controllers\CarrinhoController;
 use App\Http\Controllers\CartaoController;
+use App\Http\Controllers\CardapioController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ClienteAuthController;
 use App\Http\Controllers\ContaController;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [VitrineController::class, 'index'])->name('vitrine');
 Route::get('/vitrine/versao', [VitrineController::class, 'versao'])->name('vitrine.versao');
+Route::get('/cardapio', [CardapioController::class, 'index'])->name('cardapio');
 
 Route::prefix('carrinho')->name('carrinho.')->group(function () {
     Route::get('/', [CarrinhoController::class, 'index'])->name('index');
@@ -92,6 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/pedidos/{pedido}', [AdminPedidoController::class, 'show'])->name('pedidos.show');
         Route::post('/pedidos/{pedido}/status', [AdminPedidoController::class, 'atualizarStatus'])->name('pedidos.status');
         Route::post('/pedidos/{pedido}/nota', [AdminPedidoController::class, 'gerarNota'])->name('pedidos.nota');
+        Route::post('/pedidos/{pedido}/whatsapp', [AdminPedidoController::class, 'enviarWhatsApp'])->name('pedidos.whatsapp');
 
         Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
         Route::post('/configuracoes', [ConfiguracaoController::class, 'salvar'])->name('configuracoes.salvar');

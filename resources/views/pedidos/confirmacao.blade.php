@@ -31,7 +31,8 @@
                 @foreach($pedido->itens as $item)
                     <li>
                         <span>{{ $item->quantidade }}× {{ $item->nome_produto }}</span>
-                        <strong>{{ preco_br($item->preco_unitario * $item->quantidade) }}</strong>
+                        <strong>{{ preco_br($item->subtotal()) }}</strong>
+                        @include('partials.complementos_linha', ['complementos' => $item->complementos ?? []])
                     </li>
                 @endforeach
             </ul>
