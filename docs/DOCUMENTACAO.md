@@ -14,8 +14,9 @@ Mapa completo de rotas, controllers, services e helpers. Complementa o `README.m
 |---|---|---|---|---|
 | GET | `/` | `vitrine` | VitrineController@index | Vitrine (filtro por categoria aceita AJAX e devolve partial `vitrine.partials.resultados`) |
 | GET | `/vitrine/versao` | `vitrine.versao` | VitrineController@versao | Hash de preço/estoque para polling da vitrine viva |
+| GET | `/cardapio` | `cardapio` | CardapioController@index | Cardápio digital público: produtos ativos por categorias ativas; pedido direto reusa o fluxo loja |
 | GET | `/carrinho` | `carrinho.index` | CarrinhoController@index | Página do carrinho |
-| POST | `/carrinho/adicionar` | `carrinho.adicionar` | CarrinhoController@adicionar | Adiciona item (JSON: contagem, mensagem) |
+| POST | `/carrinho/adicionar` | `carrinho.adicionar` | CarrinhoController@adicionar | Adiciona item (JSON: contagem, mensagem). Aceita `quantidade` e `complementos` (array de ids); cada combinação vira linha separada |
 | POST | `/carrinho/atualizar` | `carrinho.atualizar` | CarrinhoController@atualizar | Muda quantidade (valida estoque) |
 | POST | `/carrinho/remover` | `carrinho.remover` | CarrinhoController@remover | Remove item |
 | GET | `/checkout` | `checkout` | CheckoutController@index | Formulário de checkout |
@@ -63,6 +64,9 @@ os flags são limpos no servidor ao concluir (`ContaController`).
 | GET | `/admin/pedidos/{pedido}` | `admin.pedidos.show` | Admin\PedidoController | Detalhe (chave de segurança, NF) |
 | POST | `/admin/pedidos/{pedido}/status` | `admin.pedidos.status` | Admin\PedidoController | Status (cancelar devolve estoque) |
 | POST | `/admin/pedidos/{pedido}/nota` | `admin.pedidos.nota` | Admin\PedidoController | Gera NF como PENDENTE (sped-nfe instalado) |
+| POST | `/admin/pedidos/{pedido}/whatsapp` | `admin.pedidos.whatsapp` | Admin\PedidoController | Encaminha o pedido ao cliente pelo WhatsApp (API Cloud ou fallback link `wa.me`) |
+| GET | `/admin/item-venda` | `admin.item-venda.index` | Admin\ItemVendaController | Painel de configuração do módulo produto/serviço (item-venda) |
+| POST | `/admin/item-venda` | `admin.item-venda.atualizar` | Admin\ItemVendaController | Salva `item_venda_ativo`/`item_venda_tipo` |
 | GET/POST | `/admin/configuracoes` | `admin.configuracoes.index` / `.salvar` | Admin\ConfiguracaoController | 20 chaves da tabela `configuracoes` (loja, NF-e, WhatsApp, login social) |
 | GET | `/admin/clientes` | `admin.clientes.index` | Admin\ClienteController | Contas + métricas |
 | POST | `/admin/clientes/{cliente}/senha-whatsapp` | `admin.clientes.senha` | Admin\ClienteController | Redefine para `123Mudar` e envia (API ou link wa.me) |
@@ -80,11 +84,12 @@ os flags são limpos no servidor ao concluir (`ContaController`).
 
 | Service | Papel |
 |---|---|
-| `Carrinho` | Carrinho em sessão; preços SEMPRE relidos do banco |
-| `LoginSocial` | OAuth 2.0 puro (Google/Facebook/Microsoft). `ativo()` exige `{provedor}_login_ativo='1'` + client_id + client_secret na tabela `configuracoes` |
-| `WhatsApp` | Meta Cloud API (`graph.facebook.com/v21.0`). `disponivel()` exige `whatsapp_ativo='1'` + token + phone_id. Sem API, o painel cai no modo link `wa.me` automaticamente |
+| `Carrinho` | Carrinho em sessão; preços SEMPRE relidos do banco. Suporta `complementos` e `quantidade` — cada combinação de complementos vira uma linha separada (chave md5) |
+| `LoginSocial` | OAuth 2.0 puro (Google/Facebook/Microsoft/Instagram, via auth-multi). `ativo()` exige `{provedor}_login_ativo='1'` + client_id + client_secret na tabela `configuracoes` |
+| `WhatsApp` | Meta Cloud API (`graph.facebook.com/v21.0`). `disponivel()` exige `whatsapp_ativo='1'` + token + phone_id. `enviarTexto()` entrega a mensagem; `linkWhatsapp()` gera o link `wa.me`. Sem API, o painel cai no modo link `wa.me` automaticamente. Usado para: ofertas/senhas de clientes e encaminhamento de pedidos (admin) |
 | `MercadoPago` | Checkout Pro (redirecionamento — nenhum dado de cartão no servidor). `criarPreferencia()` → URL do MP; `consultarPorReferencia()`/`buscarPagamento()` para confirmação. Credenciais: `mercadopago_ativo` + `mercadopago_access_token` |
 | `Efi` | Pix API v2 (copia e cola). `criarCobranca()` idempotente (txid = código do pedido); `consultarCobranca()` para status. Credenciais: `efi_ativo` + client id/secret + `efi_pix_chave` (+ `efi_sandbox`). Pix na Efí é gratuito |
+| `ItemVenda` (lib `fabricioagsf/item-venda`) | Módulo produto/serviço; tela `/admin/item-venda` controla `item_venda_ativo` (1/0) e `item_venda_tipo` (`produtos`/`servicos`/`ambos`) |
 
 ## 5. Helpers (`app/Support/helpers.php`)
 
@@ -100,8 +105,11 @@ os flags são limpos no servidor ao concluir (`ContaController`).
 `google_login_ativo`, `google_client_id`, `google_client_secret`,
 `facebook_login_ativo`, `facebook_client_id`, `facebook_client_secret`,
 `microsoft_login_ativo`, `microsoft_client_id`, `microsoft_client_secret`,
+`instagram_login_ativo`, `instagram_client_id`, `instagram_client_secret`,
 `mercadopago_ativo`, `mercadopago_access_token`, `mercadopago_public_key`,
-`efi_ativo`, `efi_client_id`, `efi_client_secret`, `efi_pix_chave`, `efi_sandbox`.
+`efi_ativo`, `efi_client_id`, `efi_client_secret`, `efi_pix_chave`, `efi_sandbox`,
+`item_venda_ativo` ('1' = módulo produto/serviço ligado), `item_venda_tipo`
+(`produtos` | `servicos` | `ambos`).
 
 Padrões criados por `ConfiguracaoSeeder`. Editáveis em **/admin/configuracoes**.
 
@@ -111,7 +119,18 @@ Padrões criados por `ConfiguracaoSeeder`. Editáveis em **/admin/configuracoes*
 - `public/js/admin.js` + scripts inline por tela — produtos, pedidos, clientes (senha/campanha respeitam `modo: api|link`), banners.
 - `layouts/loja.blade.php` injeta `window.Rotas`, `window.Textos` e `window.ContaEstado`.
 
-## 8. Observações
+## 8. Complementos (dados)
+
+- Migrations: `2026_08_27_000001_create_produto_complementos_table.php` (tabela
+  `produto_complementos`) e `2026_08_27_000002_add_complementos_to_pedido_itens_table.php`
+  (coluna JSON `complementos` em `pedido_itens`).
+- Model `ProdutoComplemento` (`TIPO adicional|remocao`): colunas `produto_id`, `tipo`,
+  `nome`, `preco`, `ativo`, `ordem`. Métodos `ehAdicional()`/`ehRemocao()`.
+- `Produto` e `PedidoItem` têm relação `complementos`; `Produto::complementosAtivos()`.
+- Cartão/checkout por linhas: cada combinação de complementos gera linha separada;
+  preços recomputados do banco (regra de ouro). O pedido guarda snapshot dos complementos.
+
+## 9. Observações
 
 - `resources/views/welcome.blade.php` é o scaffold padrão do Laravel, **não é renderizado**
   (a `/` é a vitrine) e cita rotas `login`/`register` inexistentes — inofensivo; pode ser
