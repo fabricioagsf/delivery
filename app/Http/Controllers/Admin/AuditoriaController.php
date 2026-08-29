@@ -12,6 +12,16 @@ use InvalidArgumentException;
 
 class AuditoriaController extends Controller
 {
+    protected function conferirLoja(LogAuditoria $log): void
+    {
+        $lojaId = loja_atual_id();
+
+        // Evento de outra loja não pode ser visto/restaurado por esta loja.
+        if ($lojaId !== null && $log->loja_id !== null && (int) $log->loja_id !== $lojaId) {
+            abort(404);
+        }
+    }
+
     public function __construct(protected Auditoria $auditoria) {}
 
     public function index(Request $request): View
@@ -31,11 +41,15 @@ class AuditoriaController extends Controller
 
     public function show(LogAuditoria $log): View
     {
+        $this->conferirLoja($log);
+
         return view('admin.auditoria_detalhe', ['log' => $log]);
     }
 
     public function restaurar(Request $request, LogAuditoria $log): RedirectResponse
     {
+        $this->conferirLoja($log);
+
         $dados = $request->validate([
             'senha_master' => ['required', 'string'],
         ], [

@@ -4,6 +4,8 @@ namespace Tests\Browser;
 
 use App\Models\Categoria;
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
+use Illuminate\Support\Facades\DB;
 use Tests\DuskTestCase;
 
 class CardapioTest extends DuskTestCase
@@ -18,19 +20,30 @@ class CardapioTest extends DuskTestCase
 
     protected function criarProdutoDeTeste(): Produto
     {
+        $lojaId = DB::table('tenants')->where('slug', 'gostosuras')->value('id');
+
         Produto::where('slug', $this->slug)->delete();
 
-        return Produto::create([
+        $produto = Produto::create([
             'categoria_id' => Categoria::first()->id,
             'nome' => 'Açaí Dusk Cardápio',
             'slug' => $this->slug,
             'descricao' => 'Produto de teste para o cardápio digital.',
             'preco' => 9.5,
-            'estoque' => 20,
-            'estoque_minimo' => 5,
             'ativo' => true,
             'destaque' => false,
         ]);
+
+        if ($lojaId) {
+            ProdutoEstoque::create([
+                'produto_id' => $produto->id,
+                'loja_id' => $lojaId,
+                'estoque' => 20,
+                'estoque_minimo' => 5,
+            ]);
+        }
+
+        return $produto;
     }
 
     /**

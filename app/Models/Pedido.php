@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditoravel;
+use App\Support\PossuiLoja;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,12 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Pedido extends Model
 {
     use Auditoravel;
+    use PossuiLoja;
 
     protected $fillable = [
+        'loja_id',
         'codigo',
         'cliente_id',
         'endereco_id',
         'cartao_id',
+        'mesa_id',
         'nome_cliente',
         'telefone',
         'email',
@@ -31,6 +35,12 @@ class Pedido extends Model
         'subtotal',
         'taxa_entrega',
         'total',
+        'cupom_id',
+        'cupom_codigo',
+        'cupom_desconto',
+        'pontos_ganhos',
+        'pontos_utilizados',
+        'pontos_desconto',
         'observacoes',
         'status',
         'pagamento_status',
@@ -50,5 +60,10 @@ class Pedido extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    public function mesa(): BelongsTo
+    {
+        return $this->belongsTo(Mesa::class);
     }
 }

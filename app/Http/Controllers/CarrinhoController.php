@@ -14,8 +14,24 @@ class CarrinhoController extends Controller
 
     public function index(): View
     {
+        $itens = $this->carrinho->itens();
+
+        if (! empty($itens)) {
+            $produtoIds = collect($itens)->pluck('produto.id')->unique()->values();
+            $lojaId = loja_atual_id();
+            $reloaded = Produto::whereIn('id', $produtoIds)
+                ->with(['complementosAtivos', 'estoques' => fn ($q) => $q->when($lojaId, fn ($e) => $e->where('loja_id', $lojaId))])
+                ->get()
+                ->keyBy('id');
+
+            foreach ($itens as &$item) {
+                $item['produto'] = $reloaded[$item['produto']->id] ?? $item['produto'];
+            }
+            unset($item);
+        }
+
         return view('carrinho.index', [
-            'itens' => $this->carrinho->itens(),
+            'itens' => $itens,
             'subtotal' => $this->carrinho->subtotal(),
         ]);
     }
@@ -59,12 +75,15 @@ class CarrinhoController extends Controller
         $noCarrinho = $this->carrinho->quantidadeDe($produto->id);
         $totalDesejado = $noCarrinho + $quantidade;
 
+        $estoqueLoja = $produto->estoqueNaLoja();
+        $qtdEstoque = $estoqueLoja?->estoque;
+
         if (! $produto->temEstoque($totalDesejado)) {
             $motivo = $produto->semQuantidade()
                 ? texto('carrinho', 'erro.indisponivel', 'Este item está indisponível no momento.')
                 : ($produto->esgotado()
                     ? texto('carrinho', 'erro.esgotado', 'Ops! Este doce esgotou.')
-                    : str_replace(':disponivel', (string) max(0, $produto->estoque - $noCarrinho),
+                    : str_replace(':disponivel', (string) max(0, ($qtdEstoque ?? 0) - $noCarrinho),
                         texto('carrinho', 'erro.estoque_insuficiente', 'Estoque insuficiente. Restam :disponivel.')));
 
             return response()->json([
@@ -75,7 +94,7 @@ class CarrinhoController extends Controller
                     'id' => $produto->id,
                     'nome' => $produto->nome,
                     'preco' => preco_br($produto->preco),
-                    'estoque' => $produto->estoque,
+                    'estoque' => $qtdEstoque,
                 ],
             ], 422);
         }

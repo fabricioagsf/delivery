@@ -83,7 +83,7 @@
         <section class="painel-admin margem-topo">
             <h2>{{ texto('admin_auditoria', 'detalhe.evento_titulo', 'Sobre o evento') }}</h2>
             <p>
-                <span class="status-pilula status-pilula--{{ strtolower($log->acao_legivel) }}">{{ texto('admin_auditoria', 'acao.' . strtolower($log->acao), $log->acao_legivel) }}</span>
+                <span class="status-pilula status-pilula--{{ status_pilula($log->acao_classe) }}">{{ texto('admin_auditoria', 'acao.' . strtolower($log->acao), $log->acao_legivel) }}</span>
                 · {{ texto('admin_auditoria', 'origem.' . $log->origem, ucfirst($log->origem)) }}
             </p>
             <p class="resumo-linha"><span>{{ texto('admin_pedidos', 'tabela.quando', 'Quando') }}</span><span>{{ $log->criado_em?->format('d/m/Y H:i:s') }}</span></p>

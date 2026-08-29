@@ -61,11 +61,20 @@ class ConfiguracaoSeeder extends Seeder
 
             // ===== Tema da loja =====
             'tema_loja' => 'guloseimas',   // guloseimas | italiana | japonesa | chinesa | mexicana
+
+            // ===== Cupom em destaque na vitrine =====
+            // código do cupom divulgado no cardápio/vitrine ('' = nenhum)
+            'cupom_destaque' => '',
+
+            // ===== Fidelidade (pontos) =====
+            'fidelidade_ativo' => '0',        // '1' = módulo de fidelidade (pontos) ativo
+            'fidelidade_ganho' => '1',        // pontos ganhos por R$ 1,00 de subtotal
+            'fidelidade_ponto_valor' => '0.10', // valor em R$ de cada ponto no resgate (10 pontos = R$ 1,00)
         ];
 
         foreach ($padroes as $chave => $valor) {
             Configuracao::updateOrCreate(
-                ['chave' => $chave],
+                ['loja_id' => null, 'chave' => $chave],
                 ['valor' => $valor]
             );
         }

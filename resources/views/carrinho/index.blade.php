@@ -57,7 +57,7 @@
                         <button type="button" class="contador__botao" data-acao="diminuir">&minus;</button>
                         <span class="contador__valor">{{ $item['quantidade'] }}</span>
                         <button type="button" class="contador__botao" data-acao="aumentar"
-                                @if($item['produto']->estoque !== null && $item['quantidade'] >= $item['produto']->estoque) disabled title="{{ texto('carrinho', 'erro.estoque_maximo', 'Estoque máximo atingido.') }}" @endif
+                                @if($item['produto']->estoqueNaLoja()?->estoque !== null && $item['quantidade'] >= $item['produto']->estoqueNaLoja()?->estoque) disabled title="{{ texto('carrinho', 'erro.estoque_maximo', 'Estoque máximo atingido.') }}" @endif
                         >+</button>
                     </div>
 

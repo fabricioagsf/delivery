@@ -13,6 +13,15 @@ class Carrinho
     protected const CHAVE_SESSAO = 'carrinho_linhas';
 
     /**
+     * Chave de sessão isolada por loja: itens da loja A nunca aparecem
+     * na loja B quando o cliente troca de filial na sessão.
+     */
+    protected function chaveSessao(): string
+    {
+        return self::CHAVE_SESSAO.'_'.(loja_atual_id() ?? 'geral');
+    }
+
+    /**
      * Chave estável de uma linha: produto + personalizações escolhidas.
      * A mesma gostosura com complementos diferentes vira uma linha própria.
      */
@@ -26,7 +35,7 @@ class Carrinho
     public function adicionar(Produto $produto, int $quantidade = 1, array $complementos = []): void
     {
         $chave = $this->chaveLinha($produto->id, $complementos);
-        $carrinho = session(self::CHAVE_SESSAO, []);
+        $carrinho = session($this->chaveSessao(), []);
         $atual = $carrinho[$chave] ?? null;
 
         $carrinho[$chave] = [
@@ -38,12 +47,12 @@ class Carrinho
             'complementos' => $complementos,
         ];
 
-        session([self::CHAVE_SESSAO => $carrinho]);
+        session([$this->chaveSessao() => $carrinho]);
     }
 
     public function atualizar(string $chave, int $quantidade): void
     {
-        $carrinho = session(self::CHAVE_SESSAO, []);
+        $carrinho = session($this->chaveSessao(), []);
         if (! isset($carrinho[$chave])) {
             return;
         }
@@ -54,20 +63,20 @@ class Carrinho
             $carrinho[$chave]['qtd'] = $quantidade;
         }
 
-        session([self::CHAVE_SESSAO => $carrinho]);
+        session([$this->chaveSessao() => $carrinho]);
     }
 
     public function remover(string $chave): void
     {
-        $carrinho = session(self::CHAVE_SESSAO, []);
+        $carrinho = session($this->chaveSessao(), []);
         unset($carrinho[$chave]);
 
-        session([self::CHAVE_SESSAO => $carrinho]);
+        session([$this->chaveSessao() => $carrinho]);
     }
 
     public function limpar(): void
     {
-        session()->forget(self::CHAVE_SESSAO);
+        session()->forget($this->chaveSessao());
     }
 
     /**
@@ -77,7 +86,7 @@ class Carrinho
     public function quantidadeDe(int $produtoId): int
     {
         $total = 0;
-        foreach (session(self::CHAVE_SESSAO, []) as $entrada) {
+        foreach (session($this->chaveSessao(), []) as $entrada) {
             if ((int) $entrada['produto_id'] === $produtoId) {
                 $total += (int) $entrada['qtd'];
             }
@@ -93,7 +102,7 @@ class Carrinho
      */
     public function itens(): array
     {
-        $carrinho = session(self::CHAVE_SESSAO, []);
+        $carrinho = session($this->chaveSessao(), []);
         if (empty($carrinho)) {
             return [];
         }
@@ -172,7 +181,7 @@ class Carrinho
     {
         return array_sum(array_map(
             fn ($entrada) => (int) $entrada['qtd'],
-            session(self::CHAVE_SESSAO, [])
+            session($this->chaveSessao(), [])
         ));
     }
 

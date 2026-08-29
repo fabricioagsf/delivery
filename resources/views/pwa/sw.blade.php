@@ -1,5 +1,5 @@
 /* GOSTOSURAS — service worker (PWA offline do cardápio) */
-var VERSAO = {{ json_encode($cache) }};
+var VERSAO = @json($cache);
 var CACHE_ASSETS = VERSAO + ':assets';
 var CACHE_PAGINAS = VERSAO + ':paginas';
 

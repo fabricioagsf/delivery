@@ -47,7 +47,8 @@
     </div>
 
     <h2>{{ texto('admin_mensal', 'secao.vendas', 'Vendas dia a dia') }}</h2>
-    <table class="tabela extrato__tabela">
+    <div class="tabela-rolagem">
+        <table class="tabela extrato__tabela">
         <thead>
         <tr>
             <th>{{ texto('admin_mensal', 'coluna.dia', 'Dia') }}</th>
@@ -81,10 +82,12 @@
             </tr>
         @endif
         </tbody>
-    </table>
+        </table>
+    </div>
 
     <h2>{{ texto('admin_mensal', 'secao.produtos', 'Produtos vendidos no mês') }}</h2>
-    <table class="tabela extrato__tabela">
+    <div class="tabela-rolagem">
+        <table class="tabela extrato__tabela">
         <thead>
         <tr>
             <th>#</th>
@@ -105,7 +108,8 @@
             <tr><td colspan="4" class="texto-suave">{{ texto('admin_relatorios', 'produtos.vazio', 'Nenhuma venda registrada neste período.') }}</td></tr>
         @endforelse
         </tbody>
-    </table>
+        </table>
+    </div>
 
     <footer class="extrato__pe">
         {{ texto('admin_mensal', 'rodape', 'Documento gerado pelo painel Gostosuras — valores consideram pedidos não cancelados.') }}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Pedido;
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -119,8 +120,8 @@ class RelatorioController extends Controller
 
                 case 'estoque':
                     $linha([texto('admin_produtos', 'tabela.produto', 'Produto'), texto('admin_produtos', 'tabela.categoria', 'Categoria'), texto('admin_produtos', 'tabela.estoque', 'Estoque'), texto('admin_produtos', 'tabela.minimo', 'Mínimo')]);
-                    foreach ($dados['criticos'] as $p) {
-                        $linha([$p->nome, $p->categoria?->nome, $p->estoque, $p->estoque_minimo]);
+                    foreach ($dados['criticos'] as $pe) {
+                        $linha([$pe->produto?->nome, $pe->produto?->categoria?->nome, $pe->estoque, $pe->estoque_minimo]);
                     }
                     break;
             }
@@ -148,6 +149,7 @@ class RelatorioController extends Controller
 
         $linhas = DB::table('pedido_itens')
             ->join('pedidos', 'pedidos.id', '=', 'pedido_itens.pedido_id')
+            ->where('pedidos.loja_id', loja_atual_id())
             ->where('pedidos.status', '!=', 'cancelado')
             ->whereBetween('pedidos.created_at', [$de, $ate])
             ->selectRaw(
@@ -244,6 +246,7 @@ class RelatorioController extends Controller
 
         $produtos = DB::table('pedido_itens')
             ->join('pedidos', 'pedidos.id', '=', 'pedido_itens.pedido_id')
+            ->where('pedidos.loja_id', loja_atual_id())
             ->where('pedidos.status', '!=', 'cancelado')
             ->whereBetween('pedidos.created_at', [$inicio, $fim])
             ->selectRaw(
@@ -271,6 +274,7 @@ class RelatorioController extends Controller
     protected function filtroPedidos(CarbonImmutable $de, CarbonImmutable $ate)
     {
         return Pedido::query()
+            ->where('loja_id', loja_atual_id())
             ->where('status', '!=', 'cancelado')
             ->whereBetween('created_at', [$de, $ate]);
     }
@@ -308,6 +312,7 @@ class RelatorioController extends Controller
     {
         $itens = DB::table('pedido_itens')
             ->join('pedidos', 'pedidos.id', '=', 'pedido_itens.pedido_id')
+            ->where('pedidos.loja_id', loja_atual_id())
             ->where('pedidos.status', '!=', 'cancelado')
             ->whereBetween('pedidos.created_at', [$de, $ate])
             ->selectRaw(
@@ -335,6 +340,7 @@ class RelatorioController extends Controller
 
         $linhas = DB::table('pedido_itens')
             ->join('pedidos', 'pedidos.id', '=', 'pedido_itens.pedido_id')
+            ->where('pedidos.loja_id', loja_atual_id())
             ->where('pedidos.status', '!=', 'cancelado')
             ->whereBetween('pedidos.created_at', [$de, $ate])
             ->selectRaw(
@@ -404,10 +410,13 @@ class RelatorioController extends Controller
     // ------------------------------------------------------------------
     protected function dadosEstoque(CarbonImmutable $de, CarbonImmutable $ate): array
     {
-        $criticos = Produto::query()
-            ->with('categoria:id,nome,slug')
+        $lojaId = loja_atual_id();
+
+        $criticos = ProdutoEstoque::query()
+            ->with('produto.categoria:id,nome,slug')
             ->whereNotNull('estoque')
             ->whereColumn('estoque', '<=', 'estoque_minimo')
+            ->when($lojaId, fn ($q) => $q->where('loja_id', $lojaId))
             ->orderByRaw('(estoque IS NULL) asc, estoque asc')
             ->paginate(25);
 

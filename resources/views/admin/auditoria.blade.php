@@ -33,7 +33,8 @@
 <section class="painel-admin">
     <p class="nota-segura nota-segura--admin">{{ texto('admin_auditoria', 'nota.imutavel', 'Histórico imutável de tudo que é criado, alterado e excluído — inclusive edições feitas direto no banco. Para voltar um estado, abra o evento e use a restauração com a senha master.') }}</p>
 
-    <table class="tabela">
+    <div class="tabela-rolagem">
+        <table class="tabela">
         <thead>
         <tr>
             <th>#</th>
@@ -54,7 +55,8 @@
             <tr><td colspan="4" class="texto-suave">{{ texto('admin_auditoria', 'lista.vazia', 'Nenhum evento registrado ainda.') }}</td></tr>
         @endforelse
         </tbody>
-    </table>
+        </table>
+    </div>
 
     {{ $eventos->links('vendor.pagination.padrao') }}
 </section>

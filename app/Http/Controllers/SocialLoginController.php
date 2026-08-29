@@ -8,7 +8,6 @@ use App\Services\LoginSocial;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -58,11 +57,19 @@ class SocialLoginController extends Controller
             return redirect()->route('vitrine')->with('erro_social', $e->getMessage());
         }
 
-        $tenantId = DB::table('tenants')->where('slug', 'gostosuras')->value('id');
+        $tenantId = loja_atual_id();
 
-        // Verificar se já existe um usuario auth-multi com este email
+        if ($tenantId === null) {
+            return redirect()->route('vitrine')->with(
+                'erro_social',
+                texto('conta', 'erro.sem_loja', 'Nenhuma loja ativa no momento — tente de novo em instantes.')
+            );
+        }
+
+        // Verificar se já existe um usuario auth-multi com este email nesta loja
         $usuarioAuth = Usuario::where('email', $usuario['email'])
             ->where('tipo', 'cliente')
+            ->where('tenant_id', $tenantId)
             ->first();
 
         $cliente = Cliente::where('email', $usuario['email'])->first();

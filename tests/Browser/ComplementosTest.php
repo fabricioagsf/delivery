@@ -4,6 +4,8 @@ namespace Tests\Browser;
 
 use App\Models\Categoria;
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
+use Illuminate\Support\Facades\DB;
 use Tests\DuskTestCase;
 
 class ComplementosTest extends DuskTestCase
@@ -33,11 +35,19 @@ class ComplementosTest extends DuskTestCase
             'slug' => $this->slug,
             'descricao' => 'Produto de teste para personalizações.',
             'preco' => 10.0,
-            'estoque' => 20,
-            'estoque_minimo' => 5,
             'ativo' => true,
             'destaque' => false,
         ]);
+
+        $lojaId = DB::table('tenants')->where('slug', 'gostosuras')->value('id');
+        if ($lojaId) {
+            ProdutoEstoque::create([
+                'produto_id' => $produto->id,
+                'loja_id' => $lojaId,
+                'estoque' => 20,
+                'estoque_minimo' => 5,
+            ]);
+        }
 
         $produto->complementos()->create(['tipo' => 'adicional', 'nome' => 'Cobertura de chocolate', 'preco' => 2, 'ordem' => 10]);
         $produto->complementos()->create(['tipo' => 'remocao', 'nome' => 'leite condensado', 'preco' => 0, 'ordem' => 20]);

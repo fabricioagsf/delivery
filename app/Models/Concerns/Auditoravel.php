@@ -47,6 +47,7 @@ trait Auditoravel
                 'origem' => 'aplicacao',
                 'acao' => $acao,
                 'tabela' => $this->getTable(),
+                'loja_id' => $this->loja_id ?? $novos['loja_id'] ?? $antigos['loja_id'] ?? null,
                 'registro_id' => (string) $this->getKey(),
                 'dados_antigos' => $this->semSensiveis($antigos),
                 'dados_novos' => $this->semSensiveis($novos),

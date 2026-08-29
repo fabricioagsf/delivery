@@ -19,7 +19,14 @@ class Auditoria
      */
     public function listar(array $filtros = [], int $porPagina = 25): LengthAwarePaginator
     {
+        $lojaId = loja_atual_id();
+
         return LogAuditoria::query()
+            // Isolamento por loja: mostra eventos da loja ativa e os globais
+            // (sem loja — textos/config/comportamento de marca).
+            ->when($lojaId !== null, fn ($q) => $q->where(fn ($w) => $w
+                ->where('loja_id', $lojaId)
+                ->orWhereNull('loja_id')))
             ->when(! empty($filtros['tabela']), fn ($q) => $q->where('tabela', $filtros['tabela']))
             ->when(! empty($filtros['acao']), fn ($q) => $q->where('acao', $filtros['acao']))
             ->when(! empty($filtros['origem']), fn ($q) => $q->where('origem', $filtros['origem']))

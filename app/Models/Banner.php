@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditoravel;
+use App\Support\PossuiLoja;
 use Illuminate\Database\Eloquent\Model;
 
 class Banner extends Model
 {
     use Auditoravel;
+    use PossuiLoja;
 
     protected $fillable = [
+        'loja_id',
         'titulo',
         'imagem',
         'link',

@@ -67,7 +67,8 @@
         @if($itens->isEmpty())
             <p class="texto-suave">{{ texto('admin_relatorios', 'produtos.vazio', 'Nenhuma venda registrada neste período.') }}</p>
         @else
-            <table class="tabela">
+            <div class="tabela-rolagem">
+                <table class="tabela">
                 <thead>
                 <tr>
                     <th>{{ texto('admin_produtos', 'tabela.produto', 'Produto') }}</th>
@@ -90,7 +91,8 @@
                     </tr>
                 @endforeach
                 </tbody>
-            </table>
+                </table>
+            </div>
         @endif
     </section>
 
@@ -105,7 +107,8 @@
         @if($linhasHorario->isEmpty())
             <p class="texto-suave">{{ texto('admin_relatorios', 'horarios.vazio', 'Ainda sem vendas suficientes para calcular a previsão.') }}</p>
         @else
-            <table class="tabela">
+            <div class="tabela-rolagem">
+                <table class="tabela">
                 <thead>
                 <tr>
                     <th>{{ texto('admin_relatorios', 'horarios.hora', 'Hora') }}</th>
@@ -130,7 +133,8 @@
                     </tr>
                 @endforeach
                 </tbody>
-            </table>
+                </table>
+            </div>
             <p class="nota-segura nota-segura--admin">{{ texto('admin_relatorios', 'horarios.nota_margem', 'Para ajustar a margem de segurança, altere a configuração "margem_producao" da loja.') }}</p>
         @endif
     </section>
@@ -142,7 +146,8 @@
         @if($formas->isEmpty())
             <p class="texto-suave">{{ texto('admin_relatorios', 'pagamentos.vazio', 'Nenhuma venda registrada neste período.') }}</p>
         @else
-            <table class="tabela">
+            <div class="tabela-rolagem">
+                <table class="tabela">
                 <thead>
                 <tr>
                     <th>{{ texto('admin_pedidos', 'tabela.pagamento', 'Pagamento') }}</th>
@@ -161,7 +166,8 @@
                     </tr>
                 @endforeach
                 </tbody>
-            </table>
+                </table>
+            </div>
         @endif
     </section>
 
@@ -189,7 +195,8 @@
         @if($criticos->isEmpty())
             <p class="texto-suave">{{ texto('admin_dashboard', 'estoque.ok', 'Tudo sob controle por aqui.') }}</p>
         @else
-            <table class="tabela">
+            <div class="tabela-rolagem">
+                <table class="tabela">
                 <thead>
                 <tr>
                     <th>{{ texto('admin_produtos', 'tabela.produto', 'Produto') }}</th>
@@ -200,17 +207,18 @@
                 </tr>
                 </thead>
                 <tbody>
-                @foreach($criticos as $produto)
+                @foreach($criticos as $linha)
                     <tr>
-                        <td><strong>{{ $produto->nome }}</strong></td>
-                        <td>{{ $produto->categoria?->nome }}</td>
-                        <td><strong class="{{ $produto->esgotado() ? 'texto-erro' : 'texto-alerta' }}">{{ $produto->estoque }}</strong></td>
-                        <td>{{ $produto->estoque_minimo }}</td>
+                        <td><strong>{{ $linha->produto?->nome }}</strong></td>
+                        <td>{{ $linha->produto?->categoria?->nome }}</td>
+                        <td><strong class="{{ ($linha->estoque ?? 0) <= 0 ? 'texto-erro' : 'texto-alerta' }}">{{ $linha->estoque }}</strong></td>
+                        <td>{{ $linha->estoque_minimo }}</td>
                         <td><a href="{{ route('admin.produtos.index', ['estoque' => 'critico']) }}" class="mini-botao mini-botao--salvar">{{ texto('admin_relatorios', 'estoque.repor', 'Repor') }}</a></td>
                     </tr>
                 @endforeach
                 </tbody>
-            </table>
+                </table>
+            </div>
             {{ $criticos->links('vendor.pagination.padrao') }}
         @endif
     </section>

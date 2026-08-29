@@ -20,8 +20,11 @@ class VitrineController extends Controller
             ->orderBy('nome')
             ->get();
 
+        $lojaId = loja_atual_id();
+        $comEstoque = fn ($q) => $q->when($lojaId, fn ($e) => $e->where('loja_id', $lojaId));
+
         $produtos = Produto::ativos()
-            ->with(['categoria:id,nome,slug', 'complementosAtivos'])
+            ->with(['categoria:id,nome,slug', 'complementosAtivos', 'estoques' => $comEstoque])
             ->when(
                 $slugCategoria,
                 fn ($q) => $q->whereHas(
@@ -33,10 +36,9 @@ class VitrineController extends Controller
             ->orderBy('nome')
             ->get();
 
-        // Destaques só fazem sentido na vitrine sem filtro (comportamento fixo).
         $destaques = Produto::ativos()
             ->where('destaque', true)
-            ->with('complementosAtivos')
+            ->with(['complementosAtivos', 'estoques' => $comEstoque])
             ->orderBy('nome')
             ->take(4)
             ->get();
@@ -72,11 +74,14 @@ class VitrineController extends Controller
             ->unique()
             ->values();
 
+        $lojaId = loja_atual_id();
+
         $impressao = Produto::ativos()
             ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('id', $ids))
+            ->with(['estoques' => fn ($q) => $q->when($lojaId, fn ($e) => $e->where('loja_id', $lojaId))])
             ->orderBy('id')
-            ->get(['id', 'preco', 'estoque'])
-            ->map(fn ($p) => $p->id.':'.$p->preco.':'.($p->estoque ?? 'x'))
+            ->get(['id', 'preco'])
+            ->map(fn ($p) => $p->id.':'.$p->preco.':'.($p->estoqueNaLoja()?->estoque ?? 'x'))
             ->join('|');
 
         // Complementos também entram no hash: preço/nome mudando deve

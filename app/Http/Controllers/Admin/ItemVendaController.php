@@ -35,12 +35,12 @@ class ItemVendaController extends Controller
         }
 
         Configuracao::updateOrCreate(
-            ['chave' => 'item_venda_ativo'],
+            ['loja_id' => loja_atual_id(), 'chave' => 'item_venda_ativo'],
             ['valor' => $request->boolean('item_venda_ativo') ? '1' : '0', 'updated_at' => now()]
         );
 
         Configuracao::updateOrCreate(
-            ['chave' => 'item_venda_tipo'],
+            ['loja_id' => loja_atual_id(), 'chave' => 'item_venda_tipo'],
             ['valor' => $tipo, 'updated_at' => now()]
         );
 

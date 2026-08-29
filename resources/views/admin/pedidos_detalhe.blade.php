@@ -19,7 +19,7 @@
     <section class="painel-admin">
         <h2>{{ texto('admin_pedidos', 'detalhe.resumo_titulo', 'Resumo') }}</h2>
         <p>
-            <span class="status-pilula status-pilula--{{ $pedido->status }}">{{ status_pedido($pedido->status) }}</span>
+            <span class="status-pilula status-pilula--{{ status_pilula($pedido->status) }}">{{ status_pedido($pedido->status) }}</span>
             · {{ $pedido->created_at?->format('d/m/Y H:i') }}
         </p>
 
@@ -48,6 +48,9 @@
         </table>
 
         <p class="resumo-linha"><span>{{ texto('carrinho', 'resumo.subtotal', 'Subtotal') }}</span><span>{{ preco_br($pedido->subtotal) }}</span></p>
+        @if($pedido->cupom_desconto > 0)
+            <p class="resumo-linha resumo-linha--desconto"><span>{{ texto('checkout', 'resumo.desconto', 'Desconto (cupom)') }}@if($pedido->cupom_codigo) <code>{{ $pedido->cupom_codigo }}</code>@endif</span><span>- {{ preco_br($pedido->cupom_desconto) }}</span></p>
+        @endif
         <p class="resumo-linha"><span>{{ texto('checkout', 'resumo.taxa_entrega', 'Taxa de entrega') }}</span><span>{{ preco_br($pedido->taxa_entrega) }}</span></p>
         <p class="resumo-linha resumo-linha--total"><span>{{ texto('checkout', 'resumo.total', 'Total') }}</span><strong>{{ preco_br($pedido->total) }}</strong></p>
 

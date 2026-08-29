@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\GarantirLojaAtiva;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,7 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
             fn () => route('authmulti.admin.tela')
         );
 
-        // Webhooks dos gateways chegam sem sessão/cookie do Laravel
+        $middleware->append(GarantirLojaAtiva::class);
+
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
         ]);

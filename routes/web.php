@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\ConfiguracaoController;
+use App\Http\Controllers\Admin\CupomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PedidoController as AdminPedidoController;
 use App\Http\Controllers\Admin\ProdutoController as AdminProdutoController;
@@ -17,7 +18,13 @@ use App\Http\Controllers\ContaController;
 use App\Http\Controllers\EnderecoController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\VitrineController;
+use App\Http\Controllers\Admin\FidelidadeController;
+use App\Http\Controllers\Admin\LojasController;
+use App\Http\Controllers\Admin\MesaController;
 use Illuminate\Support\Facades\Route;
+
+// PWA + troca de loja pública (um domínio, seletor na vitrine)
+Route::post('/loja/trocar', [\App\Http\Controllers\LojaController::class, 'trocar'])->name('loja.trocar');
 
 Route::get('/', [VitrineController::class, 'index'])->name('vitrine');
 Route::get('/vitrine/versao', [VitrineController::class, 'versao'])->name('vitrine.versao');
@@ -36,6 +43,8 @@ Route::prefix('carrinho')->name('carrinho.')->group(function () {
 
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.finalizar');
+Route::post('/checkout/cupom', [CheckoutController::class, 'validarCupom'])->name('checkout.validar_cupom');
+Route::post('/checkout/pontos', [CheckoutController::class, 'validarPontos'])->name('checkout.validar_pontos');
 
 Route::get('/pedido/{codigo}', [PedidoController::class, 'confirmacao'])->name('pedido.confirmacao');
 Route::post('/pedido/{codigo}/pagar', [PedidoController::class, 'pagar'])->name('pedido.pagar');
@@ -109,6 +118,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/pwa', [\App\Http\Controllers\Admin\AdminPwaController::class, 'index'])->name('pwa.index');
         Route::post('/pwa', [\App\Http\Controllers\Admin\AdminPwaController::class, 'atualizar'])->name('pwa.atualizar');
 
+        Route::get('/fidelidade', [\App\Http\Controllers\Admin\FidelidadeController::class, 'index'])->name('fidelidade.index');
+        Route::post('/fidelidade', [\App\Http\Controllers\Admin\FidelidadeController::class, 'atualizar'])->name('fidelidade.atualizar');
+
+        Route::get('/lojas', [LojasController::class, 'index'])->name('lojas.index');
+        Route::get('/lojas/criar', [LojasController::class, 'create'])->name('lojas.create');
+        Route::post('/lojas', [LojasController::class, 'store'])->name('lojas.store');
+        Route::get('/lojas/{loja}/editar', [LojasController::class, 'edit'])->name('lojas.edit');
+        Route::post('/lojas/trocar', [LojasController::class, 'trocar'])->name('lojas.trocar');
+        Route::post('/lojas/{loja}', [LojasController::class, 'update'])->name('lojas.update');
+        Route::post('/lojas/{loja}/status', [LojasController::class, 'alternarStatus'])->name('lojas.status');
+
         Route::get('/help', [\App\Http\Controllers\Admin\HelpController::class, 'index'])->name('help');
 
         Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios');
@@ -128,11 +148,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/banners/{banner}/ativo', [BannerController::class, 'alternarAtivo'])->name('banners.ativo');
         Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('banners.destroy');
 
+        Route::get('/cupons', [CupomController::class, 'index'])->name('cupons.index');
+        Route::get('/cupons/criar', [CupomController::class, 'create'])->name('cupons.create');
+        Route::post('/cupons', [CupomController::class, 'store'])->name('cupons.store');
+        Route::get('/cupons/{cupom}/editar', [CupomController::class, 'edit'])->name('cupons.edit');
+        Route::post('/cupons/{cupom}', [CupomController::class, 'update'])->name('cupons.update');
+        Route::post('/cupons/{cupom}/ativo', [CupomController::class, 'alternarAtivo'])->name('cupons.ativo');
+        Route::post('/cupons/{cupom}/divulgar', [CupomController::class, 'divulgar'])->name('cupons.divulgar');
+        Route::post('/cupons/parar-divulgacao', [CupomController::class, 'pararDivulgacao'])->name('cupons.parar_divulgacao');
+        Route::delete('/cupons/{cupom}', [CupomController::class, 'destroy'])->name('cupons.destroy');
+
         Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
         Route::get('/auditoria/{log}', [AuditoriaController::class, 'show'])->name('auditoria.show');
         Route::post('/auditoria/{log}/restaurar', [AuditoriaController::class, 'restaurar'])->name('auditoria.restaurar');
 
-        Route::get('/teste-drag-drop', fn () => view('admin.drag-drop-teste'))->name('teste.drag-drop');
         Route::post('/produtos/ordenar', fn (\Illuminate\Http\Request $r) => response()->json(['ok' => true, 'id' => $r->id]))->name('produtos.ordenar');
+
+        Route::get('/mesas', [MesaController::class, 'index'])->name('mesas.index');
+        Route::get('/mesas/criar', [MesaController::class, 'create'])->name('mesas.create');
+        Route::post('/mesas', [MesaController::class, 'store'])->name('mesas.store');
+        Route::get('/mesas/{mesa}/editar', [MesaController::class, 'edit'])->name('mesas.edit');
+        Route::post('/mesas/{mesa}', [MesaController::class, 'update'])->name('mesas.update');
+        Route::post('/mesas/{mesa}/status', [MesaController::class, 'alternarStatus'])->name('mesas.status');
+
+        Route::get('/mesas-controle', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'index'])->name('mesas-controle.index');
+        Route::get('/mesas-controle/estado', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'estado'])->name('mesas-controle.estado');
+        Route::get('/mesas-controle/mesa/{mesa}', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'detalhe'])->name('mesas-controle.detalhe');
     });
 });

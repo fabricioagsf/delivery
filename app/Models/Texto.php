@@ -11,5 +11,5 @@ class Texto extends Model
 
     protected $table = 'textos';
 
-    protected $fillable = ['pagina', 'chave', 'valor'];
+    protected $fillable = ['loja_id', 'pagina', 'chave', 'valor'];
 }

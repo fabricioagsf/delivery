@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NotaFiscal;
 use App\Models\Pedido;
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
 use App\Services\WhatsApp;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -66,11 +67,14 @@ class PedidoController extends Controller
         $novoStatus = $dados['status'];
         $eraCancelado = $pedido->status === 'cancelado';
 
-        // Ao cancelar um pedido que não estava cancelado, devolve os itens ao estoque
+        // Ao cancelar um pedido que não estava cancelado, devolve os itens ao
+        // estoque da loja onde o pedido foi feito.
         if ($novoStatus === 'cancelado' && ! $eraCancelado) {
+            $lojaId = $pedido->loja_id;
             foreach ($pedido->itens as $item) {
-                if ($item->produto_id !== null) {
-                    Produto::whereKey($item->produto_id)
+                if ($item->produto_id !== null && $lojaId !== null) {
+                    ProdutoEstoque::where('produto_id', $item->produto_id)
+                        ->where('loja_id', $lojaId)
                         ->whereNotNull('estoque')
                         ->increment('estoque', $item->quantidade);
                 }

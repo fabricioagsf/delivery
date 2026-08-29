@@ -22,7 +22,8 @@
     </div>
 @endif
 
-<form method="POST" action="{{ route('checkout.finalizar') }}" class="checkout-layout" id="form-checkout">
+<form method="POST" action="{{ route('checkout.finalizar') }}" class="checkout-layout" id="form-checkout"
+      data-subtotal="{{ $subtotal }}" data-taxa="{{ $taxaEntrega }}">
     @csrf
 
     <div class="checkout-colunas">
@@ -192,7 +193,42 @@
             </ul>
             <p class="resumo__linha"><span>{{ texto('carrinho', 'resumo.subtotal', 'Subtotal') }}</span><strong>{{ preco_br($subtotal) }}</strong></p>
             <p class="resumo__linha"><span>{{ texto('checkout', 'resumo.taxa_entrega', 'Taxa de entrega') }}</span><strong id="resumo-taxa">{{ preco_br($taxaEntrega) }}</strong></p>
+            <p class="resumo__linha resumo__linha--desconto" id="resumo-linha-desconto" hidden>
+                <span>{{ texto('checkout', 'resumo.desconto', 'Desconto (cupom)') }}</span>
+                <strong id="resumo-desconto">—</strong>
+            </p>
+            <p class="resumo__linha resumo__linha--desconto" id="resumo-linha-desconto-pontos" hidden>
+                <span>{{ texto('fidelidade', 'resumo.desconto', 'Desconto (pontos)') }}</span>
+                <strong id="resumo-desconto-pontos">—</strong>
+            </p>
             <p class="resumo__linha resumo__linha--total"><span>{{ texto('checkout', 'resumo.total', 'Total') }}</span><strong id="resumo-total">{{ preco_br($subtotal + $taxaEntrega) }}</strong></p>
+
+            <div class="campo-cupom">
+                <label for="cupom-codigo">{{ texto('checkout', 'cupom.titulo', 'Cupom de desconto') }}</label>
+                <div class="campo-cupom__linha">
+                    <input type="text" id="cupom-codigo" name="cupom_codigo" value="{{ old('cupom_codigo') }}"
+                           placeholder="{{ texto('checkout', 'cupom.placeholder', 'Ex.: FESTA10') }}" autocomplete="off" maxlength="40">
+                    <button type="button" class="botao" id="botao-aplicar-cupom">{{ texto('checkout', 'cupom.aplicar', 'Aplicar') }}</button>
+                </div>
+                <input type="hidden" id="cupom-ok" name="cupom_ok" value="">
+                @if(session('erro_cupom'))
+                    <p class="campo-cupom__erro" id="mensagem-cupom">{{ session('erro_cupom') }}</p>
+                @else
+                    <p class="campo-cupom__resposta" id="mensagem-cupom"></p>
+                @endif
+            </div>
+
+            @if($fidelidadeAtivo && $cliente)
+                <input type="hidden" id="pontos-utilizados" name="pontos_utilizados" value="{{ old('pontos_utilizados') }}">
+                <div class="campo-pontos">
+                    <label>{{ texto('fidelidade', 'saldo', 'Seus pontos') }}: <strong>{{ str_replace(':pontos', round($saldoPontos), texto('fidelidade', 'saldo.quantidade', ':pontos pontos')) }}</strong></label>
+                    <div class="campo-pontos__linha">
+                        <input type="number" id="pontos-input" min="0" max="{{ max(floor($saldoPontos), 0) }}" value="" placeholder="0">
+                        <button type="button" class="botao" id="botao-aplicar-pontos">{{ texto('fidelidade', 'botao.aplicar', 'Usar pontos') }}</button>
+                    </div>
+                    <p class="campo-pontos__resposta" id="mensagem-pontos"></p>
+                </div>
+            @endif
 
             <button type="submit" class="botao botao--chefe botao--grande bloco">{{ texto('checkout', 'botao.confirmar', 'Confirmar pedido') }}</button>
             <a href="{{ route('carrinho.index') }}" class="link-voltar">{{ texto('carrinho', 'botao.continuar', 'Continuar comprando') }}</a>
@@ -200,3 +236,165 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var form = document.getElementById('form-checkout');
+        var campoCupom = document.getElementById('cupom-codigo');
+        var botaoAplicar = document.getElementById('botao-aplicar-cupom');
+        var campoOk = document.getElementById('cupom-ok');
+        var mensagemEl = document.getElementById('mensagem-cupom');
+        var usouCupom = false;
+
+        if (!form || !campoCupom || !botaoAplicar) return;
+
+        var subtotal = parseFloat(form.dataset.subtotal) || 0;
+        var taxaFixa = parseFloat(form.dataset.taxa) || 0;
+        var desconto = 0;
+        var descontoPontos = 0;
+        var usouPontos = false;
+        var pontosInput = document.getElementById('pontos-input');
+        var botaoAplicarPontos = document.getElementById('botao-aplicar-pontos');
+        var pontosHidden = document.getElementById('pontos-utilizados');
+        var mensagemPontos = document.getElementById('mensagem-pontos');
+
+        function taxaAtual() {
+            var tipo = form.querySelector('[name="tipo_entrega"]:checked')?.value;
+            return tipo === 'entrega' ? taxaFixa : 0;
+        }
+
+        function formatarMoeda(valor) {
+            return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function atualizarTotais() {
+            var taxa = taxaAtual();
+            var total = Math.max(subtotal + taxa - desconto - descontoPontos, 0);
+            var linhaDesconto = document.getElementById('resumo-linha-desconto');
+            document.getElementById('resumo-taxa').textContent = formatarMoeda(taxa);
+            document.getElementById('resumo-total').textContent = formatarMoeda(total);
+            if (linhaDesconto && desconto > 0) {
+                linhaDesconto.hidden = false;
+                document.getElementById('resumo-desconto').textContent = '- ' + formatarMoeda(desconto);
+            } else if (linhaDesconto) {
+                linhaDesconto.hidden = true;
+            }
+            var linhaPontos = document.getElementById('resumo-linha-desconto-pontos');
+            if (linhaPontos && descontoPontos > 0) {
+                linhaPontos.hidden = false;
+                document.getElementById('resumo-desconto-pontos').textContent = '- ' + formatarMoeda(descontoPontos);
+            } else if (linhaPontos) {
+                linhaPontos.hidden = true;
+            }
+        }
+
+        function definirMensagem(txt, tipo) {
+            if (!mensagemEl) return;
+            mensagemEl.textContent = txt || '';
+            mensagemEl.className = 'campo-cupom__' + (tipo === 'erro' ? 'erro' : 'resposta');
+            if (tipo === 'erro') mensagemEl.classList.add('campo-cupom__erro');
+        }
+
+        botaoAplicar.addEventListener('click', function () {
+            var codigo = campoCupom.value.trim();
+            if (codigo === '') { definirMensagem('{{ texto('checkout','cupom.vazio','Digite o código do cupom.') }}', 'erro'); return; }
+
+            var dados = new URLSearchParams();
+            dados.append('cupom_codigo', codigo);
+            dados.append('subtotal', subtotal);
+            dados.append('tipo_entrega', form.querySelector('[name="tipo_entrega"]:checked')?.value || 'entrega');
+
+            fetch('{{ route('checkout.validar_cupom') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: dados.toString()
+            }).then(function (r) { return r.json(); }).then(function (r) {
+                if (r.valido) {
+                    desconto = r.desconto;
+                    usouCupom = true;
+                    campoOk.value = r.codigo;
+                    campoCupom.value = r.codigo;
+                    definirMensagem(r.mensagem, 'ok');
+                    atualizarTotais();
+                } else {
+                    desconto = 0;
+                    usouCupom = false;
+                    campoOk.value = '';
+                    definirMensagem(r.mensagem, 'erro');
+                    atualizarTotais();
+                }
+            }).catch(function () {
+                definirMensagem('{{ texto('checkout','cupom.erro_rede','Não foi possível validar o cupom agora.') }}', 'erro');
+            });
+        });
+
+        function definirMensagemPontos(txt, tipo) {
+            if (!mensagemPontos) return;
+            mensagemPontos.textContent = txt || '';
+            mensagemPontos.className = 'campo-pontos__resposta' + (tipo === 'erro' ? ' campo-pontos__resposta--erro' : '');
+        }
+
+        if (botaoAplicarPontos && pontosInput) {
+            botaoAplicarPontos.addEventListener('click', function () {
+                var valor = pontosInput.value.trim().replace(',', '.');
+                var pontos = parseFloat(valor) || 0;
+                if (pontos <= 0) { definirMensagemPontos('{{ texto('fidelidade','erro.zero','Informe quantos pontos quer usar.') }}', 'erro'); return; }
+
+                var dados = new URLSearchParams();
+                dados.append('pontos', pontos);
+                dados.append('subtotal', subtotal);
+                dados.append('tipo_entrega', form.querySelector('[name="tipo_entrega"]:checked') ? form.querySelector('[name="tipo_entrega"]:checked').value : 'entrega');
+
+                fetch('{{ route('checkout.validar_pontos') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                    body: dados.toString()
+                }).then(function (r) { return r.json(); }).then(function (r) {
+                    if (r.valido) {
+                        descontoPontos = r.desconto;
+                        usouPontos = true;
+                        pontosHidden.value = pontos;
+                        definirMensagemPontos(r.mensagem, 'ok');
+                        atualizarTotais();
+                    } else {
+                        descontoPontos = 0;
+                        usouPontos = false;
+                        pontosHidden.value = '';
+                        definirMensagemPontos(r.mensagem, 'erro');
+                        atualizarTotais();
+                    }
+                }).catch(function () {
+                    definirMensagemPontos('{{ texto('fidelidade','erro.rede','Não foi possível validar os pontos agora.') }}', 'erro');
+                });
+            });
+
+            pontosInput.addEventListener('change', function () {
+                if (!usouPontos) return;
+                descontoPontos = 0;
+                usouPontos = false;
+                pontosHidden.value = '';
+                definirMensagemPontos('', 'ok');
+                atualizarTotais();
+            });
+        }
+
+        form.querySelectorAll('[name="tipo_entrega"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                if (radio.checked) atualizarTotais();
+            });
+        });
+
+        if (campoCupom) {
+            campoCupom.addEventListener('change', function () {
+                if (!usouCupom) return;
+                desconto = 0;
+                usouCupom = false;
+                campoOk.value = '';
+                definirMensagem('', 'ok');
+                atualizarTotais();
+            });
+        }
+    })();
+</script>
+@endpush

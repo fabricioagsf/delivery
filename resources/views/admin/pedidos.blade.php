@@ -23,7 +23,8 @@
 </div>
 
 <section class="painel-admin">
-    <table class="tabela">
+    <div class="tabela-rolagem">
+        <table class="tabela">
         <thead>
         <tr>
             <th>{{ texto('admin_pedidos', 'tabela.codigo', 'Código') }}</th>
@@ -58,7 +59,8 @@
             <tr><td colspan="8" class="texto-suave">{{ texto('admin_pedidos', 'lista.vazia', 'Nenhum pedido encontrado.') }}</td></tr>
         @endforelse
         </tbody>
-    </table>
+        </table>
+    </div>
 
     {{ $pedidos->links('vendor.pagination.padrao') }}
 </section>

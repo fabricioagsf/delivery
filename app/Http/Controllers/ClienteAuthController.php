@@ -7,7 +7,6 @@ use Fabricioagsf\AuthMulti\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
@@ -34,7 +33,13 @@ class ClienteAuthController extends Controller
             'chave_seguranca' => texto('conta', 'chave.titulo', 'Chave de segurança'),
         ]);
 
-        $tenantId = DB::table('tenants')->where('slug', 'gostosuras')->value('id');
+        $tenantId = loja_atual_id();
+
+        if ($tenantId === null) {
+            return response()->json([
+                'mensagem' => texto('conta', 'erro.sem_loja', 'Nenhuma loja ativa no momento — tente de novo em instantes.'),
+            ], 422);
+        }
 
         $usuario = Usuario::create([
             'tenant_id' => $tenantId,
@@ -77,15 +82,22 @@ class ClienteAuthController extends Controller
             'senha' => texto('conta', 'campo.senha', 'Senha'),
         ]);
 
-        $usuario = Usuario::where('email', strtolower($credenciais['email']))
-            ->where('tipo', 'cliente')
-            ->where('ativo', true)
-            ->first();
+        $lojaId = loja_atual_id();
+
+        $usuario = $lojaId === null
+            ? null
+            : Usuario::where('email', strtolower($credenciais['email']))
+                ->where('tipo', 'cliente')
+                ->where('tenant_id', $lojaId)
+                ->where('ativo', true)
+                ->first();
 
         if (! $usuario || ! Hash::check($credenciais['senha'], $usuario->senha)) {
-            $ehAdmin = Usuario::where('email', strtolower($credenciais['email']))
-                ->where('tipo', 'admin')
-                ->exists();
+            $ehAdmin = $lojaId !== null
+                && Usuario::where('email', strtolower($credenciais['email']))
+                    ->where('tipo', 'admin')
+                    ->where('tenant_id', $lojaId)
+                    ->exists();
 
             if ($ehAdmin) {
                 return response()->json([

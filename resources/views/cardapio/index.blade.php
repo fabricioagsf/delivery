@@ -9,6 +9,8 @@
     <p class="texto-suave">{{ str_replace(':n', $totalItens, texto('cardapio', 'contador', ':n gostosuras no cardápio')) }}</p>
 </section>
 
+@include('partials.promo_destaque')
+
 @if($categorias->isEmpty())
     <p class="vazio">{{ texto('cardapio', 'vazio', 'O cardápio está sendo preparado... novidades saindo do tacho em breve!') }}</p>
 @else

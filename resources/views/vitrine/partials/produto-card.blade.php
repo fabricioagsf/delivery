@@ -1,6 +1,8 @@
 @php
     $complementos = $produto->complementosAtivos;
     $temComplementos = $complementos->isNotEmpty();
+    $estoqueLoja = $produto->estoqueNaLoja();
+    $qtdEstoque = $estoqueLoja?->estoque;
 @endphp
 <article class="cartao-produto {{ $produto->esgotado() ? 'cartao-produto--esgotado' : '' }}"
          @if($temComplementos)
@@ -48,8 +50,8 @@
                         @else
                             data-adicionar-direto
                         @endif
-                        @if($produto->estoque !== null && $produto->estoque <= 3)
-                            title="{{ str_replace(':qtd', $produto->estoque, texto('vitrine', 'produto.ultimas', 'Últimas :qtd unidades!')) }}"
+                        @if($qtdEstoque !== null && $qtdEstoque <= 3)
+                            title="{{ str_replace(':qtd', (string) $qtdEstoque, texto('vitrine', 'produto.ultimas', 'Últimas :qtd unidades!')) }}"
                         @endif
                 >{{ $temComplementos
                         ? texto('vitrine', 'botao.personalizar', 'Personalizar')
@@ -57,8 +59,8 @@
             @endif
         </div>
 
-        @if($produto->estoque !== null && $produto->estoque > 0 && $produto->estoque <= 3)
-            <p class="aviso-estoque-baixo">{{ str_replace(':qtd', $produto->estoque, texto('vitrine', 'produto.ultimas', 'Últimas :qtd unidades!')) }}</p>
+        @if($qtdEstoque !== null && $qtdEstoque > 0 && $qtdEstoque <= 3)
+            <p class="aviso-estoque-baixo">{{ str_replace(':qtd', (string) $qtdEstoque, texto('vitrine', 'produto.ultimas', 'Últimas :qtd unidades!')) }}</p>
         @endif
     </div>
 </article>

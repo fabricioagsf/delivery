@@ -4,6 +4,8 @@ namespace Tests\Browser;
 
 use App\Models\Categoria;
 use App\Models\Produto;
+use App\Models\ProdutoEstoque;
+use Illuminate\Support\Facades\DB;
 use Tests\DuskTestCase;
 
 class ProdutoUpdateTest extends DuskTestCase
@@ -25,11 +27,19 @@ class ProdutoUpdateTest extends DuskTestCase
             'slug' => $this->slug,
             'descricao' => 'Produto criado para testar a edição.',
             'preco' => 5.0,
-            'estoque' => 10,
-            'estoque_minimo' => 2,
             'ativo' => true,
             'destaque' => false,
         ]);
+
+        $lojaId = DB::table('tenants')->where('slug', 'gostosuras')->value('id');
+        if ($lojaId) {
+            ProdutoEstoque::create([
+                'produto_id' => $produto->id,
+                'loja_id' => $lojaId,
+                'estoque' => 10,
+                'estoque_minimo' => 2,
+            ]);
+        }
 
         $this->browse(function ($browser) use ($produto) {
             $browser->visit('/admin')

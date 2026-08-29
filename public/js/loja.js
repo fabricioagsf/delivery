@@ -528,7 +528,7 @@
             li.className = 'pedido-mini';
             li.innerHTML =
                 '<div class="pedido-mini__topo"><span>' + esc(pedido.codigo) + '</span>' +
-                '<span class="status-pilula status-pilula--' + esc(pedido.status) + '">' + esc(pedido.status_label) + '</span></div>' +
+                '<span class="status-pilula status-pilula--' + esc(String(pedido.status).replace(/_/g, '-')) + '">' + esc(pedido.status_label) + '</span></div>' +
                 '<small>' + esc(pedido.data) + ' · ' + esc(pedido.tipo_label) + ' · ' + esc(pedido.forma_label) + '</small>' +
                 '<div><strong>' + esc(pedido.total) + '</strong></div>';
             ulPedidos.appendChild(li);

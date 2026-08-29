@@ -64,12 +64,14 @@
         <fieldset class="secao-form">
             <legend>{{ texto('admin_produtos', 'form.secao.estoque', 'Preço e estoque') }}</legend>
 
+            <p class="texto-suave">{{ texto('admin_produtos', 'form.campo.loja_aviso', 'Estoque é controlado por loja. Os valores abaixo valem para a loja ativa no painel — troque a loja no topo para editar o estoque de outra unidade.') }}</p>
+
             <div class="grade-2">
                 <label>{{ texto('admin_produtos', 'form.campo.estoque', 'Quantidade em estoque (obrigatória para vender)') }}
-                    <input type="number" name="estoque" min="0" value="{{ old('estoque', $produto->estoque) }}">
+                    <input type="number" name="estoque" min="0" value="{{ old('estoque', $produto->estoqueNaLoja()?->estoque) }}">
                 </label>
                 <label>{{ texto('admin_produtos', 'form.campo.minimo', 'Estoque mínimo (alerta)') }}
-                    <input type="number" name="estoque_minimo" min="0" value="{{ old('estoque_minimo', $produto->estoque_minimo ?? 5) }}">
+                    <input type="number" name="estoque_minimo" min="0" value="{{ old('estoque_minimo', $produto->estoqueNaLoja()?->estoque_minimo ?? 5) }}">
                 </label>
             </div>
         </fieldset>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Produto;
 use App\Models\ProdutoComplemento;
+use App\Models\ProdutoEstoque;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class ProdutoController extends Controller
 
         $produto = Produto::create($dados);
         $this->sincronizarComplementos($produto, $request);
+        $this->salvarEstoque($produto, $request);
 
         return redirect()
             ->route('admin.produtos.index')
@@ -58,6 +60,7 @@ class ProdutoController extends Controller
 
         $produto->update($dados);
         $this->sincronizarComplementos($produto, $request);
+        $this->salvarEstoque($produto, $request);
 
         return redirect()
             ->route('admin.produtos.index')
@@ -85,8 +88,7 @@ class ProdutoController extends Controller
             'nome' => ['required', 'string', 'min:2', 'max:150'],
             'descricao' => ['nullable', 'string', 'max:1000'],
             'preco' => ['required', 'numeric', 'min:0', 'max:99999'],
-            'estoque' => ['nullable', 'integer', 'min:0', 'max:100000'],
-            'estoque_minimo' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'imagem' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:4096'],
             'destaque' => ['nullable', 'boolean'],
             'ativo' => ['nullable', 'boolean'],
             'complementos' => ['nullable', 'array'],
@@ -98,19 +100,14 @@ class ProdutoController extends Controller
         ], [
             'required' => texto('admin_produtos', 'erro.campo_obrigatorio', 'Preencha este campo.'),
             'categoria_id.exists' => texto('admin_produtos', 'erro.categoria', 'Escolha uma categoria válida.'),
+            'imagem.image' => texto('admin_produtos', 'erro.imagem_invalida', 'O arquivo precisa ser uma imagem JPG, PNG ou WEBP.'),
+            'imagem.mimes' => texto('admin_produtos', 'erro.imagem_invalida', 'O arquivo precisa ser uma imagem JPG, PNG ou WEBP.'),
+            'imagem.max' => texto('admin_produtos', 'erro.imagem_grande', 'A imagem passa de 4 MB — escolha uma mais leve.'),
             '*.numeric' => texto('admin_produtos', 'erro.numero', 'Informe um número válido.'),
-            '*.integer' => texto('admin_produtos', 'erro.estoque_invalido', 'Informe um número inteiro.'),
-            '*.min' => texto('admin_produtos', 'erro.numero', 'Informe um número válido.'),
         ]);
 
-        $dados['estoque'] = $dados['estoque'] ?? null;
-        $dados['estoque_minimo'] = (int) ($dados['estoque_minimo'] ?? 5);
         $dados['destaque'] = $request->boolean('destaque');
         $dados['ativo'] = $request->boolean('ativo');
-
-        if ($produto && $produto->estoque === null && $request->input('estoque') === null) {
-            $dados['estoque'] = null; // preserva "sem controle"
-        }
 
         return $dados;
     }
@@ -135,8 +132,14 @@ class ProdutoController extends Controller
         }
 
         $arquivo = $request->file('imagem');
+        $extensao = $arquivo->extension() ?: 'jpg';
+
+        if (! in_array(strtolower($extensao), ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $extensao = 'jpg';
+        }
+
         $nome = Str::slug(pathinfo($arquivo->getClientOriginalName(), PATHINFO_FILENAME))
-            .'-'.time().'.'.strtolower($arquivo->getClientOriginalExtension());
+            .'-'.time().'.'.strtolower($extensao);
 
         $pasta = public_path('img/produtos');
 
@@ -149,13 +152,6 @@ class ProdutoController extends Controller
         return 'img/produtos/'.$nome;
     }
 
-    /**
-     * Sincroniza as personalizações (complementos) do produto vindas do form.
-     * Regras:
-     *  - LInhas em branco (nome vazio) são ignoradas;
-     *  - Remoção é sempre gratuita (preço forçado a 0);
-     *  - Linhas novas ganham id; linhas removidas são apagadas.
-     */
     protected function sincronizarComplementos(Produto $produto, Request $request): void
     {
         $linhas = $request->input('complementos', []);
@@ -192,8 +188,6 @@ class ProdutoController extends Controller
             }
         }
 
-        // Remove personalizações que sumiram do form (nunca nascem em pedidos passados —
-        // são apenas opções do catálogo, seguras de apagar).
         foreach ($existentes as $id => $complemento) {
             if (! in_array((int) $id, $mantidos, true)) {
                 $complemento->delete();
@@ -201,39 +195,88 @@ class ProdutoController extends Controller
         }
     }
 
+    protected function salvarEstoque(Produto $produto, Request $request): void
+    {
+        $lojaId = loja_atual_id();
+
+        if ($lojaId === null) {
+            return;
+        }
+
+        $dados = $request->validate([
+            'estoque' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'estoque_minimo' => ['nullable', 'integer', 'min:0', 'max:100000'],
+        ], [
+            '*.integer' => texto('admin_produtos', 'erro.estoque_invalido', 'Informe um número inteiro.'),
+        ]);
+
+        $dados['estoque'] = array_key_exists('estoque', $dados) ? (int) $dados['estoque'] : null;
+
+        if (array_key_exists('estoque', $dados) && $dados['estoque'] === null) {
+            $dados['estoque'] = null;
+        }
+
+        $minimo = (int) ($dados['estoque_minimo'] ?? 5);
+
+        $estoqueAtual = ProdutoEstoque::where('produto_id', $produto->id)
+            ->where('loja_id', $lojaId)
+            ->first();
+
+        if ($estoqueAtual) {
+            if (array_key_exists('estoque', $dados)) {
+                $estoqueAtual->estoque = $dados['estoque'];
+            }
+            $estoqueAtual->estoque_minimo = $minimo;
+            $estoqueAtual->save();
+        } else {
+            ProdutoEstoque::create([
+                'produto_id' => $produto->id,
+                'loja_id' => $lojaId,
+                'estoque' => $dados['estoque'] ?? null,
+                'estoque_minimo' => $minimo,
+            ]);
+        }
+    }
+
     public function index(Request $request): View
     {
         $busca = $request->query('q');
         $filtro = $request->query('estoque');
+        $lojaId = loja_atual_id();
 
         $produtos = Produto::query()
-            ->with('categoria:id,nome,slug')
+            ->with(['categoria:id,nome,slug', 'estoques' => fn ($q) => $q->when($lojaId, fn ($e) => $e->where('loja_id', $lojaId))])
             ->when($busca, fn ($q) => $q->where(fn ($w) => $w
                 ->where('nome', 'like', "%{$busca}%")
                 ->orWhereHas('categoria', fn ($c) => $c->where('nome', 'like', "%{$busca}%"))))
             ->when($filtro === 'critico', fn ($q) => $q
-                ->whereNotNull('estoque')
-                ->whereColumn('estoque', '<=', 'estoque_minimo'))
-            ->when($filtro === 'esgotado', fn ($q) => $q->whereNotNull('estoque')->where('estoque', '<=', 0))
-            ->orderByRaw('(estoque IS NULL) asc, estoque asc, nome asc')
+                ->whereHas('estoques', fn ($e) => $e
+                    ->whereNotNull('estoque')
+                    ->whereColumn('estoque', '<=', 'estoque_minimo')
+                    ->when($lojaId, fn ($s) => $s->where('loja_id', $lojaId))))
+            ->when($filtro === 'esgotado', fn ($q) => $q
+                ->whereHas('estoques', fn ($e) => $e
+                    ->whereNotNull('estoque')
+                    ->where('estoque', '<=', 0)
+                    ->when($lojaId, fn ($s) => $s->where('loja_id', $lojaId))))
+            ->orderBy('nome')
             ->paginate(20)
             ->withQueryString();
+
+        $totalCriticos = (clone $produtos)->total();
 
         return view('admin.produtos', [
             'produtos' => $produtos,
             'busca' => $busca,
             'filtro' => $filtro,
-            'totalCriticos' => Produto::query()
-                ->whereNotNull('estoque')
-                ->whereColumn('estoque', '<=', 'estoque_minimo')
-                ->count(),
+            'totalCriticos' => $totalCriticos,
         ]);
     }
 
     public function atualizarEstoque(Request $request, Produto $produto): JsonResponse
     {
-        // Vazio = sem quantidade definida → produto fica INDISPONÍVEL na venda
-        // (regra da loja: só se vende com quantidade maior que zero).
+        $lojaId = loja_atual_id();
+
         $dados = $request->validate([
             'estoque' => ['nullable', 'regex:/^\d{1,6}$/'],
             'estoque_minimo' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -243,22 +286,27 @@ class ProdutoController extends Controller
             '*.min' => texto('admin_produtos', 'erro.estoque_invalido', 'Informe um número inteiro.'),
         ]);
 
-        if (array_key_exists('estoque', $dados)) {
-            $produto->estoque = ($dados['estoque'] === null || trim((string) $dados['estoque']) === '')
-                ? null
-                : (int) $dados['estoque'];
+        $novoEstoque = array_key_exists('estoque', $dados)
+            ? (trim((string) $dados['estoque']) === '' ? null : (int) $dados['estoque'])
+            : null;
+
+        $novoMinimo = ! empty($dados['estoque_minimo']) ? (int) $dados['estoque_minimo'] : 5;
+
+        if ($lojaId !== null) {
+            ProdutoEstoque::updateOrCreate(
+                ['produto_id' => $produto->id, 'loja_id' => $lojaId],
+                ['estoque' => $novoEstoque, 'estoque_minimo' => $novoMinimo]
+            );
         }
 
-        if (! empty($dados['estoque_minimo'])) {
-            $produto->estoque_minimo = (int) $dados['estoque_minimo'];
-        }
-
-        $produto->save();
+        $estoqueRetorno = $lojaId !== null
+            ? ProdutoEstoque::where('produto_id', $produto->id)->where('loja_id', $lojaId)->first()
+            : null;
 
         return response()->json([
             'mensagem' => texto('admin_produtos', 'sucesso.atualizado', 'Produto atualizado!'),
-            'estoque' => $produto->estoque,
-            'estoque_minimo' => $produto->estoque_minimo,
+            'estoque' => $estoqueRetorno?->estoque,
+            'estoque_minimo' => $estoqueRetorno?->estoque_minimo ?? 5,
         ]);
     }
 

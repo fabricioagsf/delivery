@@ -11,5 +11,5 @@ class Configuracao extends Model
 
     protected $table = 'configuracoes';
 
-    protected $fillable = ['chave', 'valor'];
+    protected $fillable = ['loja_id', 'chave', 'valor'];
 }

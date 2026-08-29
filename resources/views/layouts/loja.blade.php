@@ -21,9 +21,16 @@
 <header class="topo">
     <div class="topo__conteudo">
         <a href="{{ route('vitrine') }}" class="logo">
-            {{ tema_texto('nome', 'Guloseimas') }}
+            {{ tema_texto('nome', 'Gostosuras') }}
             <small>{{ tema_texto('slogan', 'doces artesanais') }}</small>
         </a>
+
+        @php
+            $lojasAtivas = lojas_ativas();
+        @endphp
+        @if(mostrar_seletor_loja())
+            @include('partials.loja_seletor', ['lojasAtivas' => $lojasAtivas, 'atual' => loja_atual()])
+        @endif
 
         <nav class="topo__acoes">
             <a href="{{ route('cardapio') }}" class="botao-botao-conta">

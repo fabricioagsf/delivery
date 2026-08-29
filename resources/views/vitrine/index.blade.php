@@ -37,6 +37,8 @@
 </section>
 @endif
 
+@include('partials.promo_destaque')
+
 <div id="area-produtos">
     @include('vitrine.partials.resultados')
 </div>

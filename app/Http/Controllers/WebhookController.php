@@ -25,9 +25,23 @@ class WebhookController extends Controller
             $pagamento = app(MercadoPago::class)->buscarPagamento($id);
 
             if ($pagamento && $pagamento['external_reference'] !== '') {
-                $pedido = Pedido::where('codigo', $pagamento['external_reference'])->first();
+                $pedido = Pedido::semLoja()->where('codigo', $pagamento['external_reference'])->first();
 
                 if ($pedido) {
+                    // Nunca confirma um pagamento com valor diferente do pedido
+                    // (regra de ouro: nunca cobrar/pagar valor divergente).
+                    if ($pagamento['status'] === 'approved'
+                        && abs((float) $pagamento['transaction_amount'] - (float) $pedido->total) > 0.01) {
+                        Log::warning('Mercado Pago: valor pago difere do total do pedido.', [
+                            'pedido' => $pedido->codigo,
+                            'pago' => $pagamento['transaction_amount'],
+                            'total' => $pedido->total,
+                            'pagamento' => $pagamento['pagamento_id'],
+                        ]);
+
+                        return response()->json(['ok' => true]);
+                    }
+
                     match ($pagamento['status']) {
                         'approved' => $pedido->update([
                             'pagamento_status' => 'pago',
@@ -52,7 +66,7 @@ class WebhookController extends Controller
                 continue;
             }
 
-            $pedido = Pedido::where('pagamento_id', $txid)->first();
+                $pedido = Pedido::semLoja()->where('pagamento_id', $txid)->first();
 
             if (! $pedido || $pedido->pagamento_status === 'pago') {
                 continue;

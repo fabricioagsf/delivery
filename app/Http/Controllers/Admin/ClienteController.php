@@ -16,6 +16,7 @@ class ClienteController extends Controller
     public function index(): View
     {
         $clientes = Cliente::query()
+            ->daLoja()
             ->withCount('pedidos')
             ->withSum('pedidos as total_gasto', 'total')
             ->orderByDesc('id')
@@ -23,9 +24,9 @@ class ClienteController extends Controller
 
         return view('admin.clientes', [
             'clientes' => $clientes,
-            'totalContas' => Cliente::count(),
-            'comPedidos' => Cliente::has('pedidos')->count(),
-            'novosNoMes' => Cliente::where('created_at', '>=', now()->startOfMonth())->count(),
+            'totalContas' => Cliente::daLoja()->count(),
+            'comPedidos' => Cliente::daLoja()->has('pedidos')->count(),
+            'novosNoMes' => Cliente::daLoja()->where('created_at', '>=', now()->startOfMonth())->count(),
         ]);
     }
 
@@ -36,6 +37,8 @@ class ClienteController extends Controller
      */
     public function senhaWhatsapp(Cliente $cliente): JsonResponse
     {
+        $this->conferirLoja($cliente);
+
         $cliente->update(['senha' => Hash::make(Cliente::SENHA_TEMPORARIA)]);
 
         $mensagem = str_replace(
@@ -80,6 +83,7 @@ class ClienteController extends Controller
         ]);
 
         $clientes = Cliente::query()
+            ->daLoja()
             ->when(! empty($dados['ids']), fn ($q) => $q->whereIn('id', $dados['ids']))
             ->orderBy('nome')
             ->get();
@@ -120,6 +124,16 @@ class ClienteController extends Controller
                 ),
             ]),
         ]);
+    }
+
+    protected function conferirLoja(Cliente $cliente): void
+    {
+        $lojaId = loja_atual_id();
+        $tenant = $cliente->usuario?->tenant_id;
+
+        if ($lojaId !== null && $tenant !== null && (int) $tenant !== $lojaId) {
+            abort(404);
+        }
     }
 
     protected function linkWhatsapp(string $telefone, string $mensagem): string

@@ -27,6 +27,7 @@
         {{ texto('admin_produtos', 'nota.estoque_vazio', 'Regra da loja: o produto só é vendido com quantidade maior que zero. Sem quantidade definida, ele fica indisponível na vitrine.') }}
     </p>
 
+    <div class="tabela-rolagem">
     <table class="tabela tabela--estoque">
         <thead>
         <tr>
@@ -49,13 +50,13 @@
                 <td class="celula-preco">{{ preco_br($produto->preco) }}</td>
                 <td>
                     <input type="number" min="0" max="100000"
-                           value="{{ $produto->estoque }}"
+                           value="{{ $produto->estoqueNaLoja()?->estoque }}"
                            placeholder="{{ texto('admin_produtos', 'tabela.sem_controle', '— sem controle —') }}"
                            class="entrada-estoque" data-campo="estoque">
                 </td>
                 <td>
                     <input type="number" min="0" max="100000"
-                           value="{{ $produto->estoque_minimo }}"
+                           value="{{ $produto->estoqueNaLoja()?->estoque_minimo ?? 5 }}"
                            class="entrada-estoque entrada-estoque--pequena" data-campo="estoque_minimo">
                 </td>
                 <td>
@@ -85,6 +86,7 @@
         @endforelse
         </tbody>
     </table>
+</div>
 
     {{ $produtos->links('vendor.pagination.padrao') }}
 </section>

@@ -52,12 +52,14 @@ class SincronizarAuditoria extends Command
                 continue;
             }
 
+            $temLoja = in_array('loja_id', $colunas, true);
+
             foreach (['ins' => 'INSERT', 'upd' => 'UPDATE', 'del' => 'DELETE'] as $sufixo => $evento) {
                 $gatilho = "au_{$tabela}_{$sufixo}";
 
                 try {
                     DB::statement("DROP TRIGGER IF EXISTS `{$gatilho}`");
-                    DB::unprepared($this->criarGatilho($gatilho, $tabela, $evento, $colunas));
+                    DB::unprepared($this->criarGatilho($gatilho, $tabela, $evento, $colunas, $temLoja));
                     $total++;
                 } catch (\Throwable $erro) {
                     if (str_contains($erro->getMessage(), '1419')) {
@@ -142,7 +144,7 @@ class SincronizarAuditoria extends Command
             ->all();
     }
 
-    protected function criarGatilho(string $nome, string $tabela, string $evento, array $colunas): string
+    protected function criarGatilho(string $nome, string $tabela, string $evento, array $colunas, bool $temLoja = false): string
     {
         // Em INSERT não existem valores OLD; em DELETE não existem NEW.
         $momento = $evento === 'INSERT' ? ['null', 'novo'] : ($evento === 'DELETE' ? ['velho', 'null'] : ['velho', 'novo']);
@@ -157,13 +159,22 @@ class SincronizarAuditoria extends Command
 
         $registroId = $evento === 'DELETE' ? 'OLD.`id`' : 'NEW.`id`';
 
+        // loja_id no log quando a tabela tem a coluna (para isolamento do painel)
+        $lojaId = ! $temLoja
+            ? 'NULL'
+            : ($evento === 'INSERT'
+                ? 'NEW.`loja_id`'
+                : ($evento === 'DELETE'
+                    ? 'OLD.`loja_id`'
+                    : 'COALESCE(NEW.`loja_id`, OLD.`loja_id`)'));
+
         return <<<SQL
 CREATE TRIGGER `{$nome}` AFTER {$evento} ON `{$tabela}`
 FOR EACH ROW
 INSERT INTO `logs_auditoria`
-    (`origem`, `acao`, `tabela`, `registro_id`, `dados_antigos`, `dados_novos`, `criado_em`)
+    (`origem`, `acao`, `tabela`, `loja_id`, `registro_id`, `dados_antigos`, `dados_novos`, `criado_em`)
 VALUES
-    ('gatilho', '{$evento}', '{$tabela}', {$registroId}, {$jsonAntigos}, {$jsonNovos}, NOW())
+    ('gatilho', '{$evento}', '{$tabela}', {$lojaId}, {$registroId}, {$jsonAntigos}, {$jsonNovos}, NOW())
 SQL;
     }
 

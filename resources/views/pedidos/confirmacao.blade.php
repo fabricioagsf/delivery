@@ -37,8 +37,30 @@
                 @endforeach
             </ul>
             <p class="resumo__linha"><span>{{ texto('carrinho', 'resumo.subtotal', 'Subtotal') }}</span><strong>{{ preco_br($pedido->subtotal) }}</strong></p>
+            @if($pedido->cupom_desconto > 0)
+                <p class="resumo__linha resumo__linha--desconto">
+                    <span>{{ texto('checkout', 'resumo.desconto', 'Desconto (cupom)') }}@if($pedido->cupom_codigo) <code>{{ $pedido->cupom_codigo }}</code>@endif</span>
+                    <strong>- {{ preco_br($pedido->cupom_desconto) }}</strong>
+                </p>
+            @endif
+            @if($pedido->pontos_desconto > 0)
+                <p class="resumo__linha resumo__linha--desconto">
+                    <span>{{ texto('fidelidade', 'resumo.desconto', 'Desconto (pontos)') }}</span>
+                    <strong>- {{ preco_br($pedido->pontos_desconto) }}</strong>
+                </p>
+            @endif
             <p class="resumo__linha"><span>{{ texto('checkout', 'resumo.taxa_entrega', 'Taxa de entrega') }}</span><strong>{{ preco_br($pedido->taxa_entrega) }}</strong></p>
             <p class="resumo__linha resumo__linha--total"><span>{{ texto('checkout', 'resumo.total', 'Total') }}</span><strong>{{ preco_br($pedido->total) }}</strong></p>
+            @if($pedido->pontos_ganhos > 0)
+                <p class="texto-suave resumo__fidelidade">
+                    {{ str_replace(':pontos', (int) $pedido->pontos_ganhos, texto('fidelidade', 'confirmacao.ganhou', 'Você ganhou :pontos pontos com este pedido!')) }}
+                </p>
+            @endif
+            @if($pedido->pontos_utilizados > 0)
+                <p class="texto-suave resumo__fidelidade">
+                    {{ str_replace(':pontos', (int) $pedido->pontos_utilizados, texto('fidelidade', 'confirmacao.usou', 'Você usou :pontos pontos neste pedido.')) }}
+                </p>
+            @endif
         </section>
 
         <aside class="painel">

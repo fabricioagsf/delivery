@@ -17,8 +17,6 @@ class Produto extends Model
         'slug',
         'descricao',
         'preco',
-        'estoque',
-        'estoque_minimo',
         'imagem',
         'destaque',
         'ativo',
@@ -30,8 +28,6 @@ class Produto extends Model
             'destaque' => 'boolean',
             'ativo' => 'boolean',
             'preco' => 'float',
-            'estoque' => 'integer',
-            'estoque_minimo' => 'integer',
         ];
     }
 
@@ -50,6 +46,26 @@ class Produto extends Model
         return $this->complementos()->where('ativo', true);
     }
 
+    public function estoques(): HasMany
+    {
+        return $this->hasMany(ProdutoEstoque::class);
+    }
+
+    /**
+     * Estoque do produto para a loja ativa (ou null quando não há registro
+     * para a loja — produto sem controle de estoque na loja).
+     */
+    public function estoqueNaLoja(?int $lojaId = null): ?ProdutoEstoque
+    {
+        $lojaId ??= loja_atual_id();
+
+        if ($lojaId === null) {
+            return null;
+        }
+
+        return $this->estoques()->where('loja_id', $lojaId)->first();
+    }
+
     public function scopeAtivos($query)
     {
         return $query->where('ativo', true);
@@ -57,21 +73,35 @@ class Produto extends Model
 
     /**
      * Regra de venda: o produto só é vendido com quantidade maior que zero.
-     * Sem quantidade definida (null) o produto NÃO está à venda.
+     * Sem quantidade definida (null) o produto NÃO está à venda na loja.
      */
     public function temEstoque(int $quantidade = 1): bool
     {
-        return $this->estoque !== null
-            && $this->estoque > 0
-            && $this->estoque >= $quantidade;
+        $estoque = $this->estoqueNaLoja();
+
+        if ($estoque === null) {
+            return false;
+        }
+
+        $qtd = $estoque->estoque;
+
+        return $qtd !== null && $qtd > 0 && $qtd >= $quantidade;
     }
 
     /**
-     * Indisponível para venda: sem quantidade definida ou zerado.
+     * Indisponível para venda na loja ativa: sem quantidade definida ou zerado.
      */
     public function esgotado(): bool
     {
-        return $this->estoque === null || $this->estoque <= 0;
+        $estoque = $this->estoqueNaLoja();
+
+        if ($estoque === null) {
+            return true;
+        }
+
+        $qtd = $estoque->estoque;
+
+        return $qtd === null || $qtd <= 0;
     }
 
     /**
@@ -79,6 +109,8 @@ class Produto extends Model
      */
     public function semQuantidade(): bool
     {
-        return $this->estoque === null;
+        $estoque = $this->estoqueNaLoja();
+
+        return $estoque === null || $estoque->estoque === null;
     }
 }

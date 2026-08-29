@@ -45,4 +45,17 @@ class LogAuditoria extends Model
             default => $this->acao,
         };
     }
+
+    /**
+     * Slug sem acento usado como classe CSS (status-pilula--criacao).
+     */
+    public function getAcaoClasseAttribute(): string
+    {
+        return match ($this->acao) {
+            'INSERT' => 'criacao',
+            'UPDATE' => 'alteracao',
+            'DELETE' => 'exclusao',
+            default => strtolower((string) preg_replace('/[^A-Za-z0-9]+/', '_', $this->acao)),
+        };
+    }
 }

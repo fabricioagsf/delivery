@@ -41,17 +41,23 @@ class MercadoPago
     {
         $token = trim((string) config_loja('mercadopago_access_token'));
 
+        // O total cobrado é SEMPRE o total do pedido (base + complementos +
+        // taxa de entrega − cupom − pontos), recalculado no banco no checkout.
+        // Um único item "Pedido {código}" evita desvio de valor por linha.
+        $totalPagar = max((float) $pedido->total, 0.01);
+        $nomeLoja = texto('layout', 'site.nome', 'Gostosuras');
+
         try {
             $resposta = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(20)
                 ->post(self::API.'/checkout/preferences', [
-                    'items' => $pedido->itens->map(fn ($item) => [
-                        'title' => $item->nome_produto,
-                        'quantity' => (int) $item->quantidade,
-                        'unit_price' => (float) $item->preco_unitario,
+                    'items' => [[
+                        'title' => texto('pagamentos', 'mp.titulo_pedido', 'Pedido').' '.$pedido->codigo.' — '.$nomeLoja,
+                        'quantity' => 1,
+                        'unit_price' => round($totalPagar, 2),
                         'currency_id' => 'BRL',
-                    ])->values()->all(),
+                    ]],
                     'payer' => [
                         'name' => $pedido->nome_cliente,
                         'email' => $pedido->email ?? '',
@@ -117,6 +123,7 @@ class MercadoPago
         return [
             'status' => (string) ($resultado['status'] ?? 'pending'),
             'pagamento_id' => (string) ($resultado['id'] ?? ''),
+            'transaction_amount' => (float) ($resultado['transaction_amount'] ?? 0),
         ];
     }
 
@@ -145,6 +152,8 @@ class MercadoPago
         return [
             'status' => (string) $resposta->json('status'),
             'external_reference' => (string) $resposta->json('external_reference'),
+            'pagamento_id' => (string) $resposta->json('id'),
+            'transaction_amount' => (float) $resposta->json('transaction_amount'),
         ];
     }
 }

@@ -42,14 +42,15 @@
         <ul class="lista-status">
             @foreach(['novo', 'em_preparo', 'em_entrega', 'entregue', 'cancelado'] as $status)
                 <li>
-                    <span class="status-pilula status-pilula--{{ $status }}">{{ status_pedido($status) }}</span>
+                    <span class="status-pilula status-pilula--{{ status_pilula($status) }}">{{ status_pedido($status) }}</span>
                     <strong>{{ $porStatus->get($status, 0) }}</strong>
                 </li>
             @endforeach
         </ul>
 
         <h2 class="margem-topo">{{ texto('admin_dashboard', 'recentes.titulo', 'Pedidos recentes') }}</h2>
-        <table class="tabela">
+        <div class="tabela-rolagem">
+            <table class="tabela">
             <thead>
             <tr>
                 <th>{{ texto('admin_pedidos', 'tabela.codigo', 'Código') }}</th>
@@ -64,11 +65,12 @@
                     <td><a href="{{ route('admin.pedidos.show', $pedido) }}">{{ $pedido->codigo }}</a></td>
                     <td>{{ $pedido->nome_cliente }}</td>
                     <td>{{ preco_br($pedido->total) }}</td>
-                    <td><span class="status-pilula status-pilula--{{ $pedido->status }}">{{ status_pedido($pedido->status) }}</span></td>
+                    <td><span class="status-pilula status-pilula--{{ status_pilula($pedido->status) }}">{{ status_pedido($pedido->status) }}</span></td>
                 </tr>
             @endforeach
             </tbody>
-        </table>
+            </table>
+        </div>
     </section>
 
     <section class="painel-admin">
@@ -76,7 +78,8 @@
         @if($estoqueCritico->isEmpty())
             <p class="texto-suave">{{ texto('admin_dashboard', 'estoque.ok', 'Tudo sob controle por aqui.') }}</p>
         @else
-            <table class="tabela">
+            <div class="tabela-rolagem">
+                <table class="tabela">
                 <thead>
                 <tr>
                     <th>{{ texto('admin_produtos', 'tabela.produto', 'Produto') }}</th>
@@ -85,15 +88,16 @@
                 </tr>
                 </thead>
                 <tbody>
-                @foreach($estoqueCritico as $produto)
+                @foreach($estoqueCritico as $linha)
                     <tr>
-                        <td><a href="{{ route('admin.produtos.index', ['estoque' => 'critico']) }}">{{ $produto->nome }}</a></td>
-                        <td><strong class="{{ $produto->esgotado() ? 'texto-erro' : 'texto-alerta' }}">{{ $produto->estoque }}</strong></td>
-                        <td>{{ $produto->estoque_minimo }}</td>
+                        <td><a href="{{ route('admin.produtos.index', ['estoque' => 'critico']) }}">{{ $linha->produto?->nome }}</a></td>
+                        <td><strong class="{{ ($linha->estoque ?? 0) <= 0 ? 'texto-erro' : 'texto-alerta' }}">{{ $linha->estoque }}</strong></td>
+                        <td>{{ $linha->estoque_minimo }}</td>
                     </tr>
                 @endforeach
                 </tbody>
-            </table>
+                </table>
+            </div>
         @endif
         <a href="{{ route('admin.relatorios', ['aba' => 'horarios']) }}" class="botao margem-topo">
             {{ texto('admin_dashboard', 'botao.previsao', 'Ver previsão de produção por horário') }}

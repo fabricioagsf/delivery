@@ -45,6 +45,7 @@ class ConfiguracaoController extends Controller
         'item_venda_ativo',
         'item_venda_tipo',
         'tema_loja',
+        'mesa_qrcode_ativo',
     ];
 
     private const SOCIAL_ENV_MAP = [
@@ -64,7 +65,16 @@ class ConfiguracaoController extends Controller
 
     public function index(): View
     {
-        $valores = DB::table('configuracoes')->whereIn('chave', self::CHAVES)->pluck('valor', 'chave');
+        $valores = DB::table('configuracoes')
+            ->whereIn('chave', self::CHAVES)
+            ->where(function ($q) {
+                $q->where('loja_id', loja_atual_id())->orWhereNull('loja_id');
+            })
+            ->orderByRaw('loja_id IS NULL')
+            ->orderBy('chave')
+            ->get()
+            ->keyBy('chave')
+            ->map(fn ($linha) => $linha->valor);
 
         $passosMp = [
             texto('admin_config', 'passo.mp.1', 'Crie o app em developers.mercadopago.com'),
@@ -131,7 +141,7 @@ class ConfiguracaoController extends Controller
             };
 
             DB::table('configuracoes')->updateOrInsert(
-                ['chave' => $chave],
+                ['loja_id' => loja_atual_id(), 'chave' => $chave],
                 ['valor' => $valor, 'updated_at' => now()]
             );
 

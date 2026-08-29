@@ -32,6 +32,8 @@ class CheckoutController extends Controller
         $itens = $this->carrinho->itens();
         $itensMudaram = collect($itens)->filter(fn ($item) => $item['preco_mudou']);
 
+        $mesa = mesa_sessao();
+
         return view('checkout.index', [
             'itens' => $itens,
             'itensMudaram' => $itensMudaram,
@@ -42,6 +44,11 @@ class CheckoutController extends Controller
             'cartoes' => $cliente?->cartoes ?? collect(),
             'cartaoMpAtivo' => app(MercadoPago::class)->disponivel(),
             'pixEfiAtivo' => app(Efi::class)->disponivel(),
+            'fidelidadeAtivo' => app(\App\Support\Fidelidade::class)->ativo(),
+            'saldoPontos' => $cliente ? (float) $cliente->pontos : 0,
+            'ganhoPontos' => app(\App\Support\Fidelidade::class)->ganho(),
+            'pontoValor' => app(\App\Support\Fidelidade::class)->pontoValor(),
+            'mesa' => $mesa,
         ]);
     }
 
@@ -53,18 +60,65 @@ class CheckoutController extends Controller
                 ->with('carrinho_vazio', texto('checkout', 'aviso.carrinho_vazio', 'Seu carrinho está vazio — escolha algumas gostosuras antes de finalizar.'));
         }
 
-        $dados = $request->validate($this->regras(), $this->mensagens(), $this->atributos());
+        $mesa = mesa_sessao();
+        $mesaId = $mesa?->id;
+
+        $dados = $request->validate($this->regras($mesaId), $this->mensagens(), $this->atributos());
 
         $subtotal = $this->carrinho->subtotal();
-        $tipoEntrega = $dados['tipo_entrega'];
+        $tipoEntrega = $mesaId ? 'mesa' : $dados['tipo_entrega'];
         $taxaEntrega = $tipoEntrega === 'entrega'
             ? (float) config_loja('taxa_entrega', '0')
             : 0.0;
 
+        // Cupom opcional: valida aqui (fora da trava de banco) para devolver
+        // o erro de volta ao formulário sem desfazer transação.
+        $servicoCupom = app(\App\Support\Cupom::class);
+        $codigoCupom = trim((string) ($dados['cupom_codigo'] ?? ''));
+        $cupom = $cupomDesconto = null;
+
+        if ($codigoCupom !== '') {
+            $cupom = $servicoCupom->resolver($codigoCupom, $subtotal);
+
+            if (! $cupom) {
+                return back()
+                    ->withInput()
+                    ->with('erro_cupom', $servicoCupom->recusa($codigoCupom, $subtotal));
+            }
+
+            $cupomDesconto = $cupom->desconto($subtotal);
+        }
+
+        // Fidelidade (pontos) opcional: valida o saldo aqui, fora da trava de banco,
+        // para devolver o erro ao formulário sem desfazer transação.
+        $servicoFidelidade = app(\App\Support\Fidelidade::class);
+        $clienteLogado = auth('cliente')->user();
+        $pontosUtilizados = (float) ($dados['pontos_utilizados'] ?? 0);
+        $pontosDesconto = 0.0;
+
+        if ($servicoFidelidade->ativo() && $clienteLogado && $pontosUtilizados > 0) {
+            $saldoPontos = (float) $clienteLogado->pontos;
+
+            if ($pontosUtilizados > $saldoPontos) {
+                return back()
+                    ->withInput()
+                    ->with('erro_fidelidade', texto('fidelidade', 'erro.sem_saldo', 'Você não tem pontos suficientes para esse resgate.'));
+            }
+
+            $pontosDesconto = $servicoFidelidade->descontoMaximo($pontosUtilizados, $subtotal);
+
+            if ($pontosDesconto <= 0) {
+                $pontosUtilizados = 0;
+                $pontosDesconto = 0;
+            }
+        } elseif (! $servicoFidelidade->ativo() || ! $clienteLogado) {
+            $pontosUtilizados = 0;
+        }
+
         [$enderecoId, $snapshot] = $this->resolverEndereco($request, $dados);
         $cartaoId = $this->resolverCartao($request, $dados);
 
-        $pedido = DB::transaction(function () use ($dados, $subtotal, $taxaEntrega, $tipoEntrega, $enderecoId, $cartaoId, $snapshot) {
+        $pedido = DB::transaction(function () use ($dados, $subtotal, $taxaEntrega, $tipoEntrega, $enderecoId, $cartaoId, $snapshot, $cupom, $cupomDesconto, $servicoCupom, $pontosUtilizados, $pontosDesconto, $servicoFidelidade, $mesaId) {
             $cliente = auth('cliente')->user();
 
             // Revalida o carrinho com trava de banco para nunca vender sem estoque
@@ -81,6 +135,7 @@ class CheckoutController extends Controller
             $produtosTravados = Produto::query()
                 ->whereIn('id', collect($itensSessao)->pluck('produto.id'))
                 ->where('ativo', true)
+                ->with(['estoques' => fn ($q) => $q->where('loja_id', loja_atual_id())->lockForUpdate()])
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
@@ -96,17 +151,20 @@ class CheckoutController extends Controller
                     );
                 }
 
-                if ($produto->estoque !== null) {
-                    $produto->decrement('estoque', $item['quantidade']);
+                $estoqueLoja = $produto->estoqueNaLoja();
+                if ($estoqueLoja && $estoqueLoja->estoque !== null) {
+                    $estoqueLoja->decrement('estoque', $item['quantidade']);
                 }
             }
 
             $pedido = Pedido::create([
                 ...$snapshot,
+                'loja_id' => loja_atual_id(),
                 'codigo' => $this->gerarCodigo(),
                 'cliente_id' => $cliente?->id,
                 'endereco_id' => $enderecoId,
                 'cartao_id' => $cartaoId,
+                'mesa_id' => $mesaId,
                 'nome_cliente' => $dados['nome_cliente'],
                 'telefone' => $dados['telefone'],
                 'email' => $dados['email'] ?? ($cliente->email ?? null),
@@ -115,10 +173,30 @@ class CheckoutController extends Controller
                 'troco_para' => $dados['troco_para'] ?? null,
                 'subtotal' => $subtotal,
                 'taxa_entrega' => $taxaEntrega,
-                'total' => $subtotal + $taxaEntrega,
+                'total' => max($subtotal + $taxaEntrega - ($cupomDesconto ?? 0) - $pontosDesconto, 0),
+                'cupom_id' => $cupom?->id,
+                'cupom_codigo' => $cupom?->codigo,
+                'cupom_desconto' => $cupomDesconto ?? 0,
+                'pontos_utilizados' => $pontosUtilizados,
+                'pontos_desconto' => $pontosDesconto,
                 'observacoes' => $dados['observacoes'] ?? null,
                 'status' => 'novo',
             ]);
+
+            if ($cupom) {
+                $servicoCupom->registrarUso($cupom);
+            }
+
+            // Fidelidade: credita os pontos do pedido e abate os resgatados.
+            if ($cliente && $servicoFidelidade->ativo()) {
+                $pontosGanhos = $servicoFidelidade->pontosParaPedido($subtotal);
+                $pedido->update(['pontos_ganhos' => $pontosGanhos]);
+
+                $cliente->increment('pontos', $pontosGanhos);
+                if ($pontosUtilizados > 0) {
+                    $cliente->decrement('pontos', $pontosUtilizados);
+                }
+            }
 
             foreach ($itensSessao as $item) {
                 PedidoItem::create([
@@ -135,6 +213,7 @@ class CheckoutController extends Controller
         });
 
         $this->carrinho->limpar();
+        session()->forget(['mesa_id', 'mesa_nome']);
 
         // Pagamento online: cria a cobrança e leva o cliente ao gateway.
         // Se o gateway falhar, o pedido JÁ está seguro — a tela de confirmação
@@ -168,7 +247,102 @@ class CheckoutController extends Controller
             ->with('sucesso', true);
     }
 
-    protected function regras(): array
+    public function validarCupom(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $codigo = trim((string) $request->input('cupom_codigo', ''));
+        $subtotal = (float) $request->input('subtotal', 0);
+
+        $servicoCupom = app(\App\Support\Cupom::class);
+
+        if ($codigo === '') {
+            return response()->json(['valido' => false, 'mensagem' => texto('cupom', 'campo.codigo', 'Digite o código do cupom.'), 'desconto' => 0]);
+        }
+
+        $cupom = $servicoCupom->resolver($codigo, $subtotal);
+
+        if (! $cupom) {
+            return response()->json([
+                'valido' => false,
+                'mensagem' => $servicoCupom->recusa($codigo, $subtotal),
+                'desconto' => 0,
+            ]);
+        }
+
+        $desconto = $cupom->desconto($subtotal);
+        $taxa = $request->input('tipo_entrega') === 'entrega' ? (float) config_loja('taxa_entrega', '0') : 0.0;
+
+        return response()->json([
+            'valido' => true,
+            'mensagem' => texto('cupom', 'sucesso.aplicado', 'Cupom aplicado!'),
+            'desconto' => round($desconto, 2),
+            'total' => round(max($subtotal + $taxa - $desconto, 0), 2),
+            'subtotal' => round($subtotal, 2),
+            'taxa' => round($taxa, 2),
+            'codigo' => $cupom->codigo,
+        ]);
+    }
+
+    public function validarPontos(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $subtotal = (float) $request->input('subtotal', 0);
+        $servicoFidelidade = app(\App\Support\Fidelidade::class);
+        $cliente = auth('cliente')->user();
+
+        if (! $servicoFidelidade->ativo() || ! $cliente) {
+            return response()->json([
+                'valido' => false,
+                'mensagem' => texto('fidelidade', 'erro.indisponivel', 'O programa de fidelidade não está ativo.'),
+                'desconto' => 0,
+                'saldo' => 0,
+            ]);
+        }
+
+        $pontos = (float) $request->input('pontos', 0);
+        $saldo = (float) $cliente->pontos;
+
+        if ($pontos <= 0) {
+            return response()->json([
+                'valido' => false,
+                'mensagem' => texto('fidelidade', 'erro.zero', 'Informe quantos pontos quer usar.'),
+                'desconto' => 0,
+                'saldo' => round($saldo, 2),
+            ]);
+        }
+
+        if ($pontos > $saldo) {
+            return response()->json([
+                'valido' => false,
+                'mensagem' => texto('fidelidade', 'erro.sem_saldo', 'Você não tem pontos suficientes para esse resgate.'),
+                'desconto' => 0,
+                'saldo' => round($saldo, 2),
+            ]);
+        }
+
+        $desconto = $servicoFidelidade->descontoMaximo($pontos, $subtotal);
+
+        if ($desconto <= 0) {
+            return response()->json([
+                'valido' => false,
+                'mensagem' => texto('fidelidade', 'erro.nulo', 'Esses pontos não geram desconto neste pedido.'),
+                'desconto' => 0,
+                'saldo' => round($saldo, 2),
+            ]);
+        }
+
+        $taxa = $request->input('tipo_entrega') === 'entrega' ? (float) config_loja('taxa_entrega', '0') : 0.0;
+
+        return response()->json([
+            'valido' => true,
+            'mensagem' => str_replace(':valor', preco_br($desconto), texto('fidelidade', 'sucesso.aplicado', 'Pontos aplicados: -:valor de desconto.')),
+            'desconto' => round($desconto, 2),
+            'total' => round(max($subtotal + $taxa - $desconto, 0), 2),
+            'subtotal' => round($subtotal, 2),
+            'taxa' => round($taxa, 2),
+            'saldo' => round(max($saldo - $pontos, 0), 2),
+        ]);
+    }
+
+    protected function regras(?int $mesaId = null): array
     {
         $formas = ['pix', 'cartao', 'dinheiro'];
         if (app(MercadoPago::class)->disponivel()) {
@@ -186,9 +360,15 @@ class CheckoutController extends Controller
             'forma_pagamento' => ['required', 'in:'.implode(',', $formas)],
             'observacoes' => ['nullable', 'string', 'max:1000'],
             'troco_para' => ['nullable', 'numeric', 'min:0'],
+            'cupom_codigo' => ['nullable', 'string', 'max:40'],
+            'pontos_utilizados' => ['nullable', 'numeric', 'min:0'],
         ];
 
-        if (request()->input('tipo_entrega') === 'entrega' && ! request()->filled('endereco_salvo_id')) {
+        if ($mesaId) {
+            $regras['tipo_entrega'] = ['nullable', 'in:entrega,retirada'];
+        }
+
+        if (! $mesaId && request()->input('tipo_entrega') === 'entrega' && ! request()->filled('endereco_salvo_id')) {
             $regras += [
                 'rua' => ['required', 'string', 'max:200'],
                 'numero' => ['required', 'string', 'max:20'],
