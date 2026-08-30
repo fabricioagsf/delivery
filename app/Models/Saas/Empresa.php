@@ -46,4 +46,14 @@ class Empresa extends Model
 
         return $row?->valor ?? $fallback;
     }
+
+    public function configFloat(string $chave, float $fallback = 0.0): float
+    {
+        $valor = $this->config($chave);
+        if ($valor === null) {
+            return $fallback;
+        }
+
+        return (float) str_replace(',', '.', $valor);
+    }
 }

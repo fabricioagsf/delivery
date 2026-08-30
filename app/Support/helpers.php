@@ -405,8 +405,7 @@ if (! function_exists('registrar_employees_pedido')) {
             $percentual = 0.0;
             foreach ($employee->roles as $role) {
                 $chave = 'comissao.' . $role->slug;
-                $valor = $empresa->config($chave, '0');
-                $percentual = max($percentual, (float) $valor);
+                $percentual = max($percentual, $empresa->configFloat($chave, 0.0));
             }
 
             $comissao = round((float) $pedido->total * ($percentual / 100), 2);

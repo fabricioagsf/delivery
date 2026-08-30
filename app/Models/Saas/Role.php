@@ -13,6 +13,7 @@ class Role extends Model
     protected $fillable = [
         'empresa_id',
         'nome',
+        'slug',
         'descricao',
         'permissions',
     ];
@@ -20,6 +21,12 @@ class Role extends Model
     protected $casts = [
         'permissions' => 'array',
     ];
+
+    public function getSlugAttribute(): ?string
+    {
+        return $this->attributes['slug']
+            ?? \Illuminate\Support\Str::slug($this->attributes['nome'] ?? '');
+    }
 
     public function empresa(): BelongsTo
     {
