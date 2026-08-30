@@ -8,20 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('saas_employee_store', function (Blueprint $table) {
+        Schema::create('saas_filiais', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id');
-            $table->unsignedBigInteger('loja_id');
+            $table->unsignedBigInteger('empresa_id');
+            $table->string('nome');
+            $table->string('slug')->unique();
+            $table->string('dominio')->nullable();
+            $table->boolean('ativo')->default(true);
             $table->timestamps();
 
-            $table->unique(['employee_id', 'loja_id']);
-            $table->foreign('employee_id')->references('id')->on('saas_employees')->onDelete('cascade');
-            $table->foreign('loja_id')->references('id')->on('tenants')->onDelete('cascade');
+            $table->foreign('empresa_id')->references('id')->on('saas_empresas')->onDelete('cascade');
+        });
+
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->unsignedBigInteger('saas_empresa_id')->nullable()->after('id');
+            $table->foreign('saas_empresa_id')->references('id')->on('saas_empresas')->onDelete('set null');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('saas_employee_store');
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->dropForeign(['saas_empresa_id']);
+            $table->dropColumn('saas_empresa_id');
+        });
+        Schema::dropIfExists('saas_filiais');
     }
 };

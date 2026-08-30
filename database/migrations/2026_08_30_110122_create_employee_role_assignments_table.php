@@ -8,22 +8,35 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('saas_roles', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('empresa_id');
+            $table->string('nome');
+            $table->string('descricao')->nullable();
+            $table->json('permissions')->nullable();
+            $table->timestamps();
+
+            $table->unique(['empresa_id', 'nome']);
+            $table->foreign('empresa_id')->references('id')->on('saas_empresas')->onDelete('cascade');
+        });
+
         Schema::create('saas_employee_role', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->unsignedBigInteger('role_id');
-            $table->unsignedBigInteger('loja_id')->nullable();
+            $table->unsignedBigInteger('filial_id')->nullable();
             $table->timestamps();
 
-            $table->unique(['employee_id', 'role_id', 'loja_id'], 'saas_emp_role_loja_unico');
+            $table->unique(['employee_id', 'role_id', 'filial_id'], 'saas_emp_role_filial_unico');
             $table->foreign('employee_id')->references('id')->on('saas_employees')->onDelete('cascade');
             $table->foreign('role_id')->references('id')->on('saas_roles')->onDelete('cascade');
-            $table->foreign('loja_id')->references('id')->on('tenants')->onDelete('cascade');
+            $table->foreign('filial_id')->references('id')->on('saas_filiais')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('saas_employee_role');
+        Schema::dropIfExists('saas_roles');
     }
 };
