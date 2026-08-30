@@ -8,18 +8,19 @@
     @csrf
 
     <fieldset class="secao-form">
-        <legend>Comissões por papel (%)</legend>
-        <p class="nota-segura nota-segura--admin">Defina o percentual de comissão sobre o valor total do pedido para cada papel de funcionário. O cálculo é feito automaticamente quando o pedido é finalizado.</p>
-        @forelse($roles as $role)
-            <label>{{ $role->nome }} — <small>{{ $role->descricao }}</small>
-                <div class="input-com-percentual">
-                    <input type="number" name="comissao[{{ $role->id }}]" value="{{ $comissoes[$role->id] ?? 0 }}" min="0" max="100" step="0.1" style="width:120px">
-                    <span>%</span>
-                </div>
-            </label>
-        @empty
-            <p class="texto-suave">Cadastre papéis no sistema antes.</p>
-        @endforelse
+        <legend>Comissão dos funcionários (%)</legend>
+        <p class="nota-segura nota-segura--admin">
+            Percentual único aplicado sobre o valor de cada pedido feito pelo funcionário.
+            <br>
+            <strong>Ex.:</strong> 8% — se o funcionário vendeu R$1.000 no mês, ganha R$80 de comissão.
+            Quando mais de um funcionário atende a mesma mesa, ambos recebem a mesma comissão sobre o total do pedido.
+        </p>
+        <label>Comissão padrão
+            <div class="input-com-percentual">
+                <input type="number" name="comissao_padrao" value="{{ $comissaoPadrao }}" min="0" max="100" step="0.1" style="width:120px" required>
+                <span>%</span>
+            </div>
+        </label>
     </fieldset>
 
     <div class="rodape-form">

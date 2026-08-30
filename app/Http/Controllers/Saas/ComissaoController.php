@@ -4,10 +4,7 @@ namespace App\Http\Controllers\Saas;
 
 use App\Http\Controllers\Controller;
 use App\Models\Saas\Empresa;
-use App\Models\Saas\Role;
 use App\Models\Saas\Employee;
-use App\Models\Saas\EmpresaConfig;
-use App\Models\Pedido;
 use App\Models\PedidoEmployee;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -22,44 +19,46 @@ class ComissaoController extends Controller
         $fim = $request->query('fim') ?: now()->endOfMonth()->format('Y-m-d');
         $employeeId = $request->query('employee_id');
 
-        $roles = Role::where('empresa_id', $empresa->id)->orderBy('nome')->get();
-        $employees = Employee::where('empresa_id', $empresa->id)->orderBy('name')->get();
+        $comissaoPercentual = (float) $empresa->configFloat('comissao_padrao', 0.0);
 
         $query = PedidoEmployee::query()
             ->whereHas('pedido', function ($q) use ($empresa, $inicio, $fim) {
-                $q->whereHas('loja', function ($lq) use ($empresa) {
-                    $lq->where('saas_empresa_id', $empresa->id);
-                })
-                ->whereDate('created_at', '>=', $inicio)
-                ->whereDate('created_at', '<=', $fim);
+                $q->where('saas_empresa_id', $empresa->id)
+                  ->whereDate('created_at', '>=', $inicio)
+                  ->whereDate('created_at', '<=', $fim);
             })
-            ->with(['pedido', 'employee.roles']);
+            ->with(['pedido', 'employee']);
 
         if ($employeeId) {
             $query->where('employee_id', $employeeId);
         }
 
         $registros = $query->orderByDesc('registrado_em')->get();
+        $employees = Employee::where('empresa_id', $empresa->id)->orderBy('name')->get();
 
-        $totalGeral = $registros->sum('comissao_valor');
-        $totalPedidos = $registros->groupBy('pedido_id')->count();
+        $porFuncionario = $registros->groupBy('employee_id')->map(function ($rows) {
+            $pedidosIds = $rows->pluck('pedido_id')->unique();
+            $totalVendido = \App\Models\Pedido::whereIn('id', $pedidosIds)->sum('total');
 
-        $porEmployee = $registros->groupBy('employee_id')->map(function ($rows) {
             return [
                 'employee' => $rows->first()->employee,
-                'pedidos' => $rows->count(),
-                'total' => $rows->sum('comissao_valor'),
+                'pedidos_count' => $pedidosIds->count(),
+                'total_vendido' => $totalVendido,
+                'comissao' => $rows->sum('comissao_valor'),
             ];
-        })->sortByDesc('total');
+        })->sortByDesc('comissao');
+
+        $totalVendidoGeral = $porFuncionario->sum('total_vendido');
+        $totalComissaoGeral = $porFuncionario->sum('comissao');
 
         return view('saas.comissoes.index', [
             'empresa' => $empresa,
-            'roles' => $roles,
             'employees' => $employees,
             'registros' => $registros,
-            'porEmployee' => $porEmployee,
-            'totalGeral' => $totalGeral,
-            'totalPedidos' => $totalPedidos,
+            'porFuncionario' => $porFuncionario,
+            'totalVendidoGeral' => $totalVendidoGeral,
+            'totalComissaoGeral' => $totalComissaoGeral,
+            'comissaoPercentual' => $comissaoPercentual,
             'inicio' => $inicio,
             'fim' => $fim,
             'employeeId' => $employeeId,

@@ -25,35 +25,49 @@
     <button type="submit" class="botao">Filtrar</button>
 </form>
 
-<div class="duas-colunas">
-    <section class="painel-admin">
-        <h2>Resumo</h2>
+<section class="painel-admin">
+    <h2>Resumo geral</h2>
+    <div class="estatisticas-linha">
         <div class="estatistica">
-            <span class="estatistica__numero">{{ $totalPedidos }}</span>
-            <span class="estatistica__rotulo">pedidos</span>
+            <span class="estatistica__numero">{{ $porFuncionario->count() }}</span>
+            <span class="estatistica__rotulo">funcionários</span>
         </div>
         <div class="estatistica">
-            <span class="estatistica__numero">R$ {{ number_format($totalGeral, 2, ',', '.') }}</span>
+            <span class="estatistica__numero">R$ {{ number_format($totalVendidoGeral, 2, ',', '.') }}</span>
+            <span class="estatistica__rotulo">vendas no período</span>
+        </div>
+        <div class="estatistica">
+            <span class="estatistica__numero">{{ $comissaoPercentual }}%</span>
+            <span class="estatistica__rotulo">taxa de comissão</span>
+        </div>
+        <div class="estatistica">
+            <span class="estatistica__numero">R$ {{ number_format($totalComissaoGeral, 2, ',', '.') }}</span>
             <span class="estatistica__rotulo">comissão total</span>
         </div>
-    </section>
-</div>
+    </div>
+</section>
 
 <section class="painel-admin">
     <h2>Por funcionário</h2>
-    @forelse($porEmployee as $item)
+    @forelse($porFuncionario as $item)
         <article class="cartao-cupom">
             <div class="cartao-cupom__info">
                 <strong>{{ $item['employee']->name }}</strong>
-                <small>{{ $item['employee']->roles->pluck('nome')->join(', ') ?: '—' }}</small>
-                <span>{{ $item['pedidos'] }} pedidos</span>
+                <span>{{ $item['pedidos_count'] }} pedidos</span>
             </div>
-            <div class="cartao-cupom__acoes">
-                <strong>R$ {{ number_format($item['total'], 2, ',', '.') }}</strong>
+            <div class="cartao-cupom__valores">
+                <div>
+                    <small>Vendas</small>
+                    <strong>R$ {{ number_format($item['total_vendido'], 2, ',', '.') }}</strong>
+                </div>
+                <div>
+                    <small>Comissão</small>
+                    <strong class="cor-destaque">R$ {{ number_format($item['comissao'], 2, ',', '.') }}</strong>
+                </div>
             </div>
         </article>
     @empty
-        <p class="texto-suave">Nenhum registro no período.</p>
+        <p class="texto-suave">Nenhum pedido com funcionário registrado no período.</p>
     @endforelse
 </section>
 
@@ -67,6 +81,7 @@
             <th>Pedido</th>
             <th>Funcionário</th>
             <th>Data</th>
+            <th>Valor</th>
             <th>Comissão</th>
         </tr>
         </thead>
@@ -76,14 +91,22 @@
                 <td><a href="/admin/pedidos/{{ $reg->pedido_id }}">{{ $reg->pedido?->codigo ?? '#'.$reg->pedido_id }}</a></td>
                 <td>{{ $reg->employee?->name ?? '—' }}</td>
                 <td>{{ $reg->registrado_em?->format('d/m/Y H:i') }}</td>
+                <td>R$ {{ number_format($reg->pedido?->total ?? 0, 2, ',', '.') }}</td>
                 <td>R$ {{ number_format($reg->comissao_valor, 2, ',', '.') }}</td>
             </tr>
         @empty
-            <tr><td colspan="4" class="texto-suave">Nenhum registro.</td></tr>
+            <tr><td colspan="5" class="texto-suave">Nenhum registro.</td></tr>
         @endforelse
         </tbody>
     </table>
     </div>
 </section>
 @endif
+
+<style>
+.cor-destaque { color: var(--cor-sucesso, #16a34a); }
+.estatisticas-linha { display:flex; gap:24px; flex-wrap:wrap; }
+.cartao-cupom__valores { display:flex; gap:24px; text-align:right; }
+.cartao-cupom__valores small { display:block; font-size:.75rem; color:var(--cor-texto-suave); }
+</style>
 @endsection

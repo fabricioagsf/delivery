@@ -381,8 +381,12 @@ if (! function_exists('saas_empresa_atual')) {
 
 if (! function_exists('registrar_employees_pedido')) {
     /**
-     * Grava todos os funcionários que atenderam o pedido e calcula a comissão
-     * de cada um com base nos papéis configurados pela empresa.
+     * Grava todos os funcionários que atenderam o pedido.
+     * A comissão é a % fixa da empresa (comissao_padrao) sobre o total do pedido.
+     * Cada funcionário que participou recebe sua parte do total — ou seja,
+     * se 2 funcionários atenderam um pedido de R$100 com 8% de comissão,
+     * cada um recebe 8% de R$100 (a comissão não é dividida, é o mesmo % do
+     * pedido, pois cada um fez a venda).
      */
     function registrar_employees_pedido(\App\Models\Pedido $pedido, \App\Models\Saas\Empresa $empresa, array $employeeIds): void
     {
@@ -390,18 +394,13 @@ if (! function_exists('registrar_employees_pedido')) {
             return;
         }
 
+        $percentual = $empresa->configFloat('comissao_padrao', 0.0);
+
         $employees = \App\Models\Saas\Employee::whereIn('id', $employeeIds)
             ->where('empresa_id', $empresa->id)
-            ->with('roles')
             ->get();
 
         foreach ($employees as $employee) {
-            $percentual = 0.0;
-            foreach ($employee->roles as $role) {
-                $chave = 'comissao.' . $role->slug;
-                $percentual = max($percentual, $empresa->configFloat($chave, 0.0));
-            }
-
             $comissao = round((float) $pedido->total * ($percentual / 100), 2);
 
             \App\Models\PedidoEmployee::updateOrCreate(
