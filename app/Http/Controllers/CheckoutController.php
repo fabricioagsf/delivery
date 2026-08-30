@@ -168,6 +168,7 @@ class CheckoutController extends Controller
             $pedido = Pedido::create([
                 ...$snapshot,
                 'loja_id' => loja_atual_id(),
+                'saas_empresa_id' => saas_empresa_atual()?->id,
                 'codigo' => $this->gerarCodigo(),
                 'cliente_id' => $cliente?->id,
                 'endereco_id' => $enderecoId,

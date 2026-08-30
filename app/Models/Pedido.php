@@ -19,6 +19,7 @@ class Pedido extends Model
 
     protected $fillable = [
         'loja_id',
+        'saas_empresa_id',
         'codigo',
         'cliente_id',
         'endereco_id',
@@ -97,5 +98,10 @@ class Pedido extends Model
             'employee_id'
         )->withPivot('comissao_valor', 'registrado_em')
          ->withTimestamps();
+    }
+
+    public function empresa(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Saas\Empresa::class, 'saas_empresa_id');
     }
 }

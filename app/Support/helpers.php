@@ -378,3 +378,49 @@ if (! function_exists('saas_empresa_atual')) {
         return $employee?->empresa;
     }
 }
+
+if (! function_exists('registrar_employees_pedido')) {
+    /**
+     * Grava todos os funcionários que atenderam o pedido e calcula a comissão
+     * de cada um com base nos papéis configurados pela empresa.
+     */
+    function registrar_employees_pedido(\App\Models\Pedido $pedido, array $employeeIds): void
+    {
+        $pedido->loadMissing('empresa');
+
+        $empresa = saas_empresa_atual() ?? \App\Models\Saas\Empresa::find(
+            \Fabricioagsf\AuthMulti\Models\Tenant::find($pedido->loja_id)?->saas_empresa_id
+        );
+
+        if (! $empresa || empty($employeeIds)) {
+            return;
+        }
+
+        $employees = \App\Models\Saas\Employee::whereIn('id', $employeeIds)
+            ->where('empresa_id', $empresa->id)
+            ->with('roles')
+            ->get();
+
+        foreach ($employees as $employee) {
+            $percentual = 0.0;
+            foreach ($employee->roles as $role) {
+                $chave = 'comissao.' . $role->slug;
+                $valor = $empresa->config($chave, '0');
+                $percentual = max($percentual, (float) $valor);
+            }
+
+            $comissao = round((float) $pedido->total * ($percentual / 100), 2);
+
+            \App\Models\PedidoEmployee::updateOrCreate(
+                [
+                    'pedido_id' => $pedido->id,
+                    'employee_id' => $employee->id,
+                ],
+                [
+                    'comissao_valor' => $comissao,
+                    'registrado_em' => now(),
+                ]
+            );
+        }
+    }
+}

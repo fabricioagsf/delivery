@@ -9,6 +9,7 @@ use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Produto;
 use App\Models\ProdutoComplemento;
+use App\Models\Saas\Employee;
 use Fabricioagsf\ItemVenda\Complemento;
 use Fabricioagsf\ItemVenda\ComplementoTipo;
 use Fabricioagsf\ItemVenda\ItemFactory;
@@ -65,11 +66,22 @@ class MesaPedidosController extends Controller
             ->contaAberta()
             ->get();
 
+        $employees = collect();
+        $empresa = saas_empresa_atual();
+        if ($empresa) {
+            $employees = Employee::where('empresa_id', $empresa->id)
+                ->where('ativo', true)
+                ->with('roles')
+                ->orderBy('name')
+                ->get();
+        }
+
         return view('admin.mesa_pedido', [
             'mesa' => $mesa,
             'categorias' => $categorias,
             'abertos' => $abertos,
             'totalAberto' => (float) $abertos->sum('total'),
+            'employees' => $employees,
         ]);
     }
 
@@ -93,6 +105,8 @@ class MesaPedidosController extends Controller
                 'itens.*.quantidade' => ['required', 'integer', 'min:1', 'max:99'],
                 'itens.*.complementos' => ['array'],
                 'itens.*.complementos.*' => ['integer'],
+                'employees' => ['array'],
+                'employees.*' => ['integer'],
                 'nome_cliente' => ['nullable', 'string', 'max:120'],
                 'observacoes' => ['nullable', 'string', 'max:500'],
             ], [
@@ -174,6 +188,7 @@ class MesaPedidosController extends Controller
 
                 $pedido = Pedido::create([
                     'loja_id' => $lojaId,
+                    'saas_empresa_id' => saas_empresa_atual()?->id,
                     'codigo' => $this->gerarCodigo(),
                     'mesa_id' => $mesa->id,
                     'nome_cliente' => trim((string) ($dados['nome_cliente'] ?? '')) ?: $mesa->nome ?: ($mesa->codigo ?: ('Mesa #'.$mesa->id)),
@@ -195,6 +210,16 @@ class MesaPedidosController extends Controller
                         'complementos' => $linha['snapshot_complementos'] ?: null,
                         'quantidade' => $linha['quantidade'],
                     ]);
+                }
+
+                $employeeIds = collect($dados['employees'] ?? [])
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (! empty($employeeIds)) {
+                    registrar_employees_pedido($pedido, $employeeIds);
                 }
 
                 return $pedido;

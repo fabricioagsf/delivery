@@ -108,6 +108,22 @@
                     <textarea name="observacoes" maxlength="500" rows="2" placeholder="{{ texto('admin_mesa_pedido', 'campo.observacoes_ph', 'Ex.: sem castanhas') }}"></textarea>
                 </label>
 
+                @if($employees->isNotEmpty())
+                    <fieldset class="mesa-pedido__funcionarios">
+                        <legend>{{ texto('admin_mesa_pedido', 'campo.funcionarios', 'Funcionários que atendem (comissão)') }}</legend>
+                        <p class="nota-segura nota-segura--admin">
+                            {{ texto('admin_mesa_pedido', 'campo.funcionarios_ajuda', 'Selecione um ou mais. A comissão de cada um é calculada pela % do papel configurado pela empresa.') }}
+                        </p>
+                        @foreach($employees as $emp)
+                            <label class="mesa-pedido__funcionario">
+                                <input type="checkbox" name="employees[]" value="{{ $emp->id }}">
+                                <span>{{ $emp->name }}</span>
+                                <small>{{ $emp->roles->pluck('nome')->join(', ') ?: '—' }}</small>
+                            </label>
+                        @endforeach
+                    </fieldset>
+                @endif
+
                 <p class="mesa-pedido__pedido-total">
                     <span>{{ texto('admin_mesa_pedido', 'cart.total', 'Total do pedido') }}</span>
                     <strong id="mesa-pedido-total">R$ 0,00</strong>
