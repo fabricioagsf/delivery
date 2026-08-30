@@ -8,21 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('saas_roles', function (Blueprint $table) {
+        Schema::create('saas_configs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('empresa_id');
-            $table->string('nome');
-            $table->string('descricao')->nullable();
-            $table->json('permissions')->nullable();
+            $table->string('chave');
+            $table->text('valor')->nullable();
             $table->timestamps();
 
-            $table->unique(['empresa_id', 'nome']);
+            $table->unique(['empresa_id', 'chave']);
             $table->foreign('empresa_id')->references('id')->on('saas_empresas')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('saas_roles');
+        Schema::dropIfExists('saas_configs');
     }
 };

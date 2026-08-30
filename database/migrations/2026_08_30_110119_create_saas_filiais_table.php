@@ -20,18 +20,22 @@ return new class extends Migration
             $table->foreign('empresa_id')->references('id')->on('saas_empresas')->onDelete('cascade');
         });
 
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->unsignedBigInteger('saas_empresa_id')->nullable()->after('id');
-            $table->foreign('saas_empresa_id')->references('id')->on('saas_empresas')->onDelete('set null');
-        });
+        if (! Schema::hasColumn('tenants', 'saas_empresa_id')) {
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->unsignedBigInteger('saas_empresa_id')->nullable()->after('id');
+                $table->foreign('saas_empresa_id')->references('id')->on('saas_empresas')->onDelete('set null');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->dropForeign(['saas_empresa_id']);
-            $table->dropColumn('saas_empresa_id');
-        });
+        if (Schema::hasColumn('tenants', 'saas_empresa_id')) {
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->dropForeign(['saas_empresa_id']);
+                $table->dropColumn('saas_empresa_id');
+            });
+        }
         Schema::dropIfExists('saas_filiais');
     }
 };

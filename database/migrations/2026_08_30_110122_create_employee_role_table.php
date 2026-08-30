@@ -8,18 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('saas_roles', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('empresa_id');
-            $table->string('nome');
-            $table->string('descricao')->nullable();
-            $table->json('permissions')->nullable();
-            $table->timestamps();
-
-            $table->unique(['empresa_id', 'nome']);
-            $table->foreign('empresa_id')->references('id')->on('saas_empresas')->onDelete('cascade');
-        });
-
         Schema::create('saas_employee_role', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
@@ -37,6 +25,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('saas_employee_role');
-        Schema::dropIfExists('saas_roles');
     }
 };

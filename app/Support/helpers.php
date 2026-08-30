@@ -350,3 +350,31 @@ if (! function_exists('promo_destaque')) {
         return $cupom;
     }
 }
+
+if (! function_exists('saas_employee_atual')) {
+    function saas_employee_atual(): ?\App\Models\Saas\Employee
+    {
+        static $employee = false;
+
+        $id = session('saas_employee_id');
+
+        if ($id === null) {
+            return null;
+        }
+
+        if ($employee === false || $employee?->id !== (int) $id) {
+            $employee = \App\Models\Saas\Employee::find($id);
+        }
+
+        return $employee;
+    }
+}
+
+if (! function_exists('saas_empresa_atual')) {
+    function saas_empresa_atual(): ?\App\Models\Saas\Empresa
+    {
+        $employee = saas_employee_atual();
+
+        return $employee?->empresa;
+    }
+}

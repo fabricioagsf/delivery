@@ -191,3 +191,42 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Painel SaaS (nível plataforma: empresas, filiais, employees, módulos)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('saas')->name('saas.')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\Saas\SaasAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Saas\SaasAuthController::class, 'login'])->name('login.processar');
+    Route::post('/logout', [\App\Http\Controllers\Saas\SaasAuthController::class, 'logout'])->name('logout');
+
+    Route::middleware('saas.auth')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Saas\DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/empresas', [\App\Http\Controllers\Saas\EmpresaController::class, 'index'])->name('empresas.index');
+        Route::get('/empresas/criar', [\App\Http\Controllers\Saas\EmpresaController::class, 'create'])->name('empresas.create');
+        Route::post('/empresas', [\App\Http\Controllers\Saas\EmpresaController::class, 'store'])->name('empresas.store');
+        Route::get('/empresas/{empresa}/editar', [\App\Http\Controllers\Saas\EmpresaController::class, 'edit'])->name('empresas.edit');
+        Route::put('/empresas/{empresa}', [\App\Http\Controllers\Saas\EmpresaController::class, 'update'])->name('empresas.update');
+        Route::delete('/empresas/{empresa}', [\App\Http\Controllers\Saas\EmpresaController::class, 'destroy'])->name('empresas.destroy');
+
+        Route::get('/filiais', [\App\Http\Controllers\Saas\FilialController::class, 'index'])->name('filiais.index');
+        Route::get('/filiais/criar', [\App\Http\Controllers\Saas\FilialController::class, 'create'])->name('filiais.create');
+        Route::post('/filiais', [\App\Http\Controllers\Saas\FilialController::class, 'store'])->name('filiais.store');
+        Route::get('/filiais/{filial}/editar', [\App\Http\Controllers\Saas\FilialController::class, 'edit'])->name('filiais.edit');
+        Route::put('/filiais/{filial}', [\App\Http\Controllers\Saas\FilialController::class, 'update'])->name('filiais.update');
+        Route::delete('/filiais/{filial}', [\App\Http\Controllers\Saas\FilialController::class, 'destroy'])->name('filiais.destroy');
+
+        Route::get('/employees', [\App\Http\Controllers\Saas\EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('/employees/criar', [\App\Http\Controllers\Saas\EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('/employees', [\App\Http\Controllers\Saas\EmployeeController::class, 'store'])->name('employees.store');
+        Route::get('/employees/{employee}/editar', [\App\Http\Controllers\Saas\EmployeeController::class, 'edit'])->name('employees.edit');
+        Route::put('/employees/{employee}', [\App\Http\Controllers\Saas\EmployeeController::class, 'update'])->name('employees.update');
+        Route::delete('/employees/{employee}', [\App\Http\Controllers\Saas\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
+        Route::get('/modulos', [\App\Http\Controllers\Saas\ModuloController::class, 'index'])->name('modulos.index');
+        Route::post('/modulos/{slug}/toggle', [\App\Http\Controllers\Saas\ModuloController::class, 'toggle'])->name('modulos.toggle');
+    });
+});

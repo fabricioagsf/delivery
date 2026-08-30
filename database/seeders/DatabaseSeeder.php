@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             ConfiguracaoSeeder::class,
             AdminSeeder::class,
             ModuloSeeder::class,
+            SaasSeeder::class,
         ]);
     }
 }
