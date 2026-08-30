@@ -36,9 +36,15 @@
             <a href="{{ route('saas.filiais.index') }}" class="{{ request()->routeIs('saas.filiais.*') ? 'ativo' : '' }}">
                 Filiais
             </a>
-            <p class="lateral__grupo">Catálogo</p>
             <a href="{{ route('saas.modulos.index') }}" class="{{ request()->routeIs('saas.modulos.*') ? 'ativo' : '' }}">
                 Módulos
+            </a>
+            <p class="lateral__grupo">Empresa ativa</p>
+            <a href="{{ route('saas.empresas.config', saas_empresa_atual()?->id) }}" class="{{ request()->routeIs('saas.empresas.config.*') ? 'ativo' : '' }}">
+                Configurações
+            </a>
+            <a href="{{ route('saas.comissoes.index', saas_empresa_atual()?->id) }}" class="{{ request()->routeIs('saas.comissoes.*') ? 'ativo' : '' }}">
+                Comissões
             </a>
         </nav>
         <form method="POST" action="{{ route('saas.logout') }}" class="saas-logout">

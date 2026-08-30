@@ -22,6 +22,8 @@
                 <small>{{ $empresa->filiais_count }} filiais · {{ $empresa->employees_count }} funcionários</small>
             </div>
             <div class="cartao-cupom__acoes">
+                <a href="{{ route('saas.empresas.config', $empresa) }}" class="mini-botao">Configurações</a>
+                <a href="{{ route('saas.comissoes.index', $empresa) }}" class="mini-botao">Comissões</a>
                 <a href="{{ route('saas.empresas.edit', $empresa) }}" class="mini-botao">Editar</a>
                 <form method="POST" action="{{ route('saas.empresas.destroy', $empresa) }}" onsubmit="return confirm('Remover empresa?')">
                     @csrf @method('DELETE')

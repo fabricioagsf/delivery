@@ -24,6 +24,7 @@ class Pedido extends Model
         'endereco_id',
         'cartao_id',
         'mesa_id',
+        'employee_id',
         'nome_cliente',
         'telefone',
         'email',
@@ -85,5 +86,16 @@ class Pedido extends Model
     public function mesa(): BelongsTo
     {
         return $this->belongsTo(Mesa::class);
+    }
+
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Models\Saas\Employee::class,
+            'pedido_employees',
+            'pedido_id',
+            'employee_id'
+        )->withPivot('comissao_valor', 'registrado_em')
+         ->withTimestamps();
     }
 }

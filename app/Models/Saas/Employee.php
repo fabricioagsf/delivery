@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
 class Employee extends Authenticatable
 {
     protected $table = 'saas_employees';
@@ -50,5 +49,16 @@ class Employee extends Authenticatable
     public function temAcessoFilial(int $filialId): bool
     {
         return $this->filiais()->where('saas_filiais.id', $filialId)->exists();
+    }
+
+    public function pedidos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Models\Pedido::class,
+            'pedido_employees',
+            'employee_id',
+            'pedido_id'
+        )->withPivot('comissao_valor', 'registrado_em')
+         ->withTimestamps();
     }
 }

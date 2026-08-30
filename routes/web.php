@@ -212,6 +212,11 @@ Route::prefix('saas')->name('saas.')->group(function () {
         Route::put('/empresas/{empresa}', [\App\Http\Controllers\Saas\EmpresaController::class, 'update'])->name('empresas.update');
         Route::delete('/empresas/{empresa}', [\App\Http\Controllers\Saas\EmpresaController::class, 'destroy'])->name('empresas.destroy');
 
+        Route::get('/empresas/{empresa}/config', [\App\Http\Controllers\Saas\EmpresaConfigController::class, 'index'])->name('empresas.config');
+        Route::post('/empresas/{empresa}/config', [\App\Http\Controllers\Saas\EmpresaConfigController::class, 'salvar'])->name('empresas.config.salvar');
+
+        Route::get('/empresas/{empresa}/comissoes', [\App\Http\Controllers\Saas\ComissaoController::class, 'index'])->name('comissoes.index');
+
         Route::get('/filiais', [\App\Http\Controllers\Saas\FilialController::class, 'index'])->name('filiais.index');
         Route::get('/filiais/criar', [\App\Http\Controllers\Saas\FilialController::class, 'create'])->name('filiais.create');
         Route::post('/filiais', [\App\Http\Controllers\Saas\FilialController::class, 'store'])->name('filiais.store');
