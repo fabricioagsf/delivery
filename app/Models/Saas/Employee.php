@@ -61,4 +61,24 @@ class Employee extends Authenticatable
         )->withPivot('comissao_valor', 'registrado_em')
          ->withTimestamps();
     }
+
+    public function hasPermission(string $permissao): bool
+    {
+        foreach ($this->roles as $role) {
+            if ($role->temPermissao($permissao) || $role->temPermissao('*')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function filiaisLiberadas()
+    {
+        if ($this->hasPermission('*')) {
+            return $this->empresa?->filiais()->where('ativo', true)->orderBy('nome')->get() ?? collect();
+        }
+
+        return $this->filiais()->where('ativo', true)->orderBy('nome')->get();
+    }
 }

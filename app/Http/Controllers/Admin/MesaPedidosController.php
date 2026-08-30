@@ -218,8 +218,11 @@ class MesaPedidosController extends Controller
                     ->values()
                     ->all();
 
-                if (! empty($employeeIds)) {
-                    registrar_employees_pedido($pedido, $employeeIds);
+                if (! empty($employeeIds) && ! empty($lojaId)) {
+                    $empresa = saas_empresa_atual();
+                    if ($empresa) {
+                        registrar_employees_pedido($pedido, $empresa, $employeeIds);
+                    }
                 }
 
                 return $pedido;

@@ -173,20 +173,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/mesas/{mesa}', [MesaController::class, 'update'])->name('mesas.update');
         Route::post('/mesas/{mesa}/status', [MesaController::class, 'alternarStatus'])->name('mesas.status');
 
-        Route::get('/mesas-controle', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'index'])->name('mesas-controle.index');
-        Route::get('/mesas-controle/estado', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'estado'])->name('mesas-controle.estado');
-        Route::get('/mesas-controle/mesa/{mesa}', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'detalhe'])->name('mesas-controle.detalhe');
+        Route::get('/mesas-controle', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'index'])
+            ->middleware('operador')->name('mesas-controle.index');
+        Route::get('/mesas-controle/estado', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'estado'])
+            ->middleware('operador')->name('mesas-controle.estado');
+        Route::get('/mesas-controle/mesa/{mesa}', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'detalhe'])
+            ->middleware('operador')->name('mesas-controle.detalhe');
 
-        Route::get('/mesa/{mesa}/pedido', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'pedir'])->name('mesa.pedido');
-        Route::post('/mesa/{mesa}/pedido/confirmar', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'confirmarPedido'])->name('mesa.pedidoConfirmar');
-        Route::post('/pedidos/{pedido}/entregue-mesa', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'entregueMesa'])->name('pedidos.entregueMesa');
+        Route::get('/mesa/{mesa}/pedido', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'pedir'])
+            ->middleware('operador')->name('mesa.pedido');
+        Route::post('/mesa/{mesa}/pedido/confirmar', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'confirmarPedido'])
+            ->middleware('operador')->name('mesa.pedidoConfirmar');
+        Route::post('/pedidos/{pedido}/entregue-mesa', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'entregueMesa'])
+            ->middleware('operador')->name('pedidos.entregueMesa');
 
-        Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.index');
-        Route::get('/caixa/estado', [CaixaController::class, 'estado'])->name('caixa.estado');
-        Route::get('/caixa/mesa/{mesa}', [CaixaController::class, 'conta'])->name('caixa.conta');
-        Route::post('/caixa/mesa/{mesa}/fechar', [CaixaController::class, 'fechar'])->name('caixa.fechar');
+        Route::get('/caixa', [CaixaController::class, 'index'])
+            ->middleware('operador')->name('caixa.index');
+        Route::get('/caixa/estado', [CaixaController::class, 'estado'])
+            ->middleware('operador')->name('caixa.estado');
+        Route::get('/caixa/mesa/{mesa}', [CaixaController::class, 'conta'])
+            ->middleware('operador')->name('caixa.conta');
+        Route::post('/caixa/mesa/{mesa}/fechar', [CaixaController::class, 'fechar'])
+            ->middleware('operador')->name('caixa.fechar');
 
-        Route::post('/caixa/mesa/{mesa}/pix-efi', [CaixaController::class, 'pixEfi'])->name('caixa.pixEfi');
+        Route::post('/caixa/mesa/{mesa}/pix-efi', [CaixaController::class, 'pixEfi'])
+            ->middleware('operador')->name('caixa.pixEfi');
 
         Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
     });
@@ -204,6 +215,7 @@ Route::prefix('saas')->name('saas.')->group(function () {
 
     Route::middleware('saas.auth')->group(function () {
         Route::get('/', [\App\Http\Controllers\Saas\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/operar', fn () => view('saas.operar.index'))->name('operar.index');
 
         Route::get('/empresas', [\App\Http\Controllers\Saas\EmpresaController::class, 'index'])->name('empresas.index');
         Route::get('/empresas/criar', [\App\Http\Controllers\Saas\EmpresaController::class, 'create'])->name('empresas.create');

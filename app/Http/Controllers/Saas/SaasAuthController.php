@@ -32,7 +32,11 @@ class SaasAuthController extends Controller
         session(['saas_employee_id' => $employee->id]);
         session(['saas_empresa_id' => $employee->empresa_id]);
 
-        return redirect()->route('saas.dashboard');
+        if ($employee->hasPermission('*')) {
+            return redirect()->route('saas.dashboard');
+        }
+
+        return redirect()->route('saas.operar.index');
     }
 
     public function logout(): RedirectResponse

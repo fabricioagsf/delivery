@@ -20,6 +20,17 @@ class GarantirLojaAtiva
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $filialParam = $request->query('filial');
+        if ($filialParam) {
+            $loja = Tenant::find((int) $filialParam);
+            if ($loja && $loja->status === 'ativo') {
+                $employee = saas_employee_atual();
+                if (! $employee || $employee->hasPermission('*') || $employee->temAcessoFilial($loja->id)) {
+                    session(['loja_id' => $loja->id]);
+                }
+            }
+        }
+
         if (! session()->has('loja_id')) {
             $loja = Tenant::where('status', 'ativo')
                 ->orderBy('id')

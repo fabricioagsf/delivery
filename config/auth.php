@@ -53,6 +53,11 @@ return [
             'driver' => 'session',
             'provider' => 'clientes',
         ],
+
+        'saas_employee' => [
+            'driver' => 'session',
+            'provider' => 'saas_employees',
+        ],
     ],
 
     /*
@@ -81,6 +86,11 @@ return [
         'clientes' => [
             'driver' => 'eloquent',
             'model' => Cliente::class,
+        ],
+
+        'saas_employees' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Saas\Employee::class,
         ],
     ],
 

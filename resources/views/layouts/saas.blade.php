@@ -26,6 +26,9 @@
             <a href="{{ route('saas.dashboard') }}" class="{{ request()->routeIs('saas.dashboard') ? 'ativo' : '' }}">
                 Dashboard
             </a>
+            <a href="{{ route('saas.operar.index') }}" class="{{ request()->routeIs('saas.operar.*') ? 'ativo' : '' }}">
+                Operar filial
+            </a>
             <p class="lateral__grupo">Plataforma</p>
             <a href="{{ route('saas.empresas.index') }}" class="{{ request()->routeIs('saas.empresas.*') ? 'ativo' : '' }}">
                 Empresas

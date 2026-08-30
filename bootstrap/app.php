@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\GarantirLojaAtiva;
+use App\Http\Middleware\OperadorAutenticado;
 use App\Http\Middleware\SaasAuth;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'saas.auth' => SaasAuth::class,
+            'operador' => OperadorAutenticado::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

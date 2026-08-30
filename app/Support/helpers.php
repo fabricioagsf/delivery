@@ -384,15 +384,9 @@ if (! function_exists('registrar_employees_pedido')) {
      * Grava todos os funcionários que atenderam o pedido e calcula a comissão
      * de cada um com base nos papéis configurados pela empresa.
      */
-    function registrar_employees_pedido(\App\Models\Pedido $pedido, array $employeeIds): void
+    function registrar_employees_pedido(\App\Models\Pedido $pedido, \App\Models\Saas\Empresa $empresa, array $employeeIds): void
     {
-        $pedido->loadMissing('empresa');
-
-        $empresa = saas_empresa_atual() ?? \App\Models\Saas\Empresa::find(
-            \Fabricioagsf\AuthMulti\Models\Tenant::find($pedido->loja_id)?->saas_empresa_id
-        );
-
-        if (! $empresa || empty($employeeIds)) {
+        if (empty($employeeIds)) {
             return;
         }
 
