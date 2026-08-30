@@ -110,13 +110,13 @@
 
                 @if($employees->isNotEmpty())
                     <fieldset class="mesa-pedido__funcionarios">
-                        <legend>{{ texto('admin_mesa_pedido', 'campo.funcionarios', 'Funcionários que atendem (comissão)') }}</legend>
+                        <legend>{{ texto('admin_mesa_pedido', 'campo.funcionarios', 'Funcionário que está fazendo este pedido') }}</legend>
                         <p class="nota-segura nota-segura--admin">
-                            {{ texto('admin_mesa_pedido', 'campo.funcionarios_ajuda', 'Selecione um ou mais. A comissão de cada um é calculada pela % do papel configurado pela empresa.') }}
+                            Marque o seu nome. (Outros funcionários podem abrir pedidos separados na mesma mesa — cada pedido gera a sua comissão.)
                         </p>
                         @foreach($employees as $emp)
                             <label class="mesa-pedido__funcionario">
-                                <input type="checkbox" name="employees[]" value="{{ $emp->id }}">
+                                <input type="radio" name="employees[]" value="{{ $emp->id }}" required>
                                 <span>{{ $emp->name }}</span>
                                 <small>{{ $emp->roles->pluck('nome')->join(', ') ?: '—' }}</small>
                             </label>

@@ -396,23 +396,26 @@ if (! function_exists('registrar_employees_pedido')) {
 
         $percentual = $empresa->configFloat('comissao_padrao', 0.0);
 
-        $employees = \App\Models\Saas\Employee::whereIn('id', $employeeIds)
+        $employeeId = (int) $employeeIds[0];
+        $employee = \App\Models\Saas\Employee::where('id', $employeeId)
             ->where('empresa_id', $empresa->id)
-            ->get();
+            ->first();
 
-        foreach ($employees as $employee) {
-            $comissao = round((float) $pedido->total * ($percentual / 100), 2);
-
-            \App\Models\PedidoEmployee::updateOrCreate(
-                [
-                    'pedido_id' => $pedido->id,
-                    'employee_id' => $employee->id,
-                ],
-                [
-                    'comissao_valor' => $comissao,
-                    'registrado_em' => now(),
-                ]
-            );
+        if (! $employee) {
+            return;
         }
+
+        $comissao = round((float) $pedido->total * ($percentual / 100), 2);
+
+        \App\Models\PedidoEmployee::updateOrCreate(
+            [
+                'pedido_id' => $pedido->id,
+                'employee_id' => $employee->id,
+            ],
+            [
+                'comissao_valor' => $comissao,
+                'registrado_em' => now(),
+            ]
+        );
     }
 }

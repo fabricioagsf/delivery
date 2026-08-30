@@ -105,7 +105,7 @@ class MesaPedidosController extends Controller
                 'itens.*.quantidade' => ['required', 'integer', 'min:1', 'max:99'],
                 'itens.*.complementos' => ['array'],
                 'itens.*.complementos.*' => ['integer'],
-                'employees' => ['array'],
+                'employees' => ['array', 'min:1', 'max:1'],
                 'employees.*' => ['integer'],
                 'nome_cliente' => ['nullable', 'string', 'max:120'],
                 'observacoes' => ['nullable', 'string', 'max:500'],
