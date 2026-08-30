@@ -205,6 +205,14 @@ class TextoSistemaSeeder extends Seeder
                 'botao.confirmar' => 'Confirmar pedido',
             ],
 
+            // ================= MÓDULO DESLIGADO (aviso público) =================
+            'modulo_off' => [
+                'delivery.titulo' => 'Vendas online desativadas',
+                'delivery.texto' => 'As vendas online estão desativadas nesta unidade. Faça o seu pedido na mesa ou volte em breve.',
+                'mesa.titulo' => 'Atendimento na mesa desativado',
+                'mesa.texto' => 'O atendimento pela mesa está desativado nesta unidade. Faça o seu pedido pelo delivery online.',
+            ],
+
             // ================= CONFIRMAÇÃO =================
             'confirmacao' => [
                 'titulo.pagina' => 'Pedido confirmado',
@@ -344,6 +352,7 @@ class TextoSistemaSeeder extends Seeder
                 'forma.pix' => 'Pix',
                 'forma.cartao' => 'Cartão',
                 'forma.dinheiro' => 'Dinheiro',
+                'forma.indefinido' => 'A definir',
                 'forma.cartao_mp' => 'Cartão online (Mercado Pago)',
                 'forma.pix_efi' => 'Pix automático',
                 'mp.erro_conexao' => 'Não foi possível falar com o Mercado Pago agora — tente de novo.',
@@ -693,6 +702,12 @@ class TextoSistemaSeeder extends Seeder
                  'erro.estoque' => 'Um dos itens esgotou no meio do caminho — revise o pedido.',
                  'erro.geral' => 'Não foi possível enviar o pedido — tente de novo.',
                  'sem_estoque' => 'Quantidade acima do estoque disponível.',
+                 'abertos.titulo' => 'Pedidos em aberto desta mesa',
+                 'abertos.rotulo' => 'Pedidos em aberto desta mesa',
+                 'abertos.entregue_as' => 'Entregue às :hora',
+                 'abertos.entregando' => 'Marcando...',
+                 'abertos.confirmar_entrega' => 'Confirmar marcação de entregue na mesa?',
+                 'sucesso.entregue' => 'Pedido marcado como entregue na mesa!',
              ],
 
              // ================= ADMIN: CONTROLE DE PEDIDOS DAS MESAS =================
@@ -707,6 +722,8 @@ class TextoSistemaSeeder extends Seeder
                  'estado.novo' => 'Aguardando preparo',
                  'estado.em_preparo' => 'Em preparo',
                  'estado.em_entrega' => 'Sendo entregue',
+                 'estado.entregue' => 'Entregue',
+                 'estado.entregue_mesa' => 'Entregue na mesa',
                  'pessoa.singular' => 'pessoa',
                  'pessoa.plural' => 'pessoas',
                  'popup.titulo' => 'Novo pedido!',
@@ -728,6 +745,11 @@ class TextoSistemaSeeder extends Seeder
                  'modal.pagamento' => 'Pagamento',
                  'modal.horario' => 'Hora',
                  'modal.itens' => 'item(ns)',
+                 'modal.entregar_mesa' => 'Entregue na mesa',
+                 'modal.confirmar_entrega' => 'Confirmar marcação de entregue na mesa?',
+                 'modal.entregue_mesa_horario' => 'Entregue às',
+                 'modal.entregar_erro' => 'Não foi possível marcar como entregue.',
+                 'cartao.entregue_sucesso' => 'Pedido marcado como entregue na mesa!',
                  'vazio' => 'Nenhuma mesa ativa cadastrada. Vá em Mesas e ative ao menos uma para começar.',
              ],
 
@@ -775,7 +797,7 @@ class TextoSistemaSeeder extends Seeder
                  'erro.troco_obrigatorio' => 'Informe o valor recebido em dinheiro.',
                  'erro.troco_menor' => 'O valor recebido é menor que o total da conta.',
                  'erro.sem_conta' => 'Esta mesa não tem conta em aberto.',
-                 'erro.desativado' => 'O módulo Caixa está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.',
+                 'erro.desativado' => 'O módulo PDV (mesas, tablet e caixa) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.',
                  'modal.fechar' => 'Fechar',
                  'vazio' => 'Nenhuma mesa ativa cadastrada. Vá em Mesas e ative ao menos uma para começar.',
              ],
@@ -786,6 +808,7 @@ class TextoSistemaSeeder extends Seeder
                  'titulo.pagina' => 'Módulos do sistema',
                  'nota.banco' => 'Os módulos são ligados e desligados APENAS direto no banco de dados, na tabela modulos: flag ativo = 1 (ligado) ou 0 (desligado). Esta tela apenas mostra o estado atual — não altere por aqui.',
                  'nota.escopo' => 'Mostrando o estado para a loja ativa. Linha com loja própria vale para ela; senão vale a regra global (loja NULL).',
+                 'nota.operacao' => 'Os módulos PDV (mesas, tablet e caixa) e Delivery (vendas online) definem o modo de operação da loja: delivery, PDV ou ambos — cada filial pode ter o seu próprio modo.',
                  'coluna.modulo' => 'Módulo',
                  'coluna.chave' => 'Chave (slug)',
                  'coluna.status' => 'Status',
@@ -979,6 +1002,7 @@ class TextoSistemaSeeder extends Seeder
                 'menu.mesas' => 'Mesas (QR)',
                 'menu.mesas_controle' => 'Pedidos das mesas',
                 'menu.caixa' => 'Caixa',
+                'categoria.pdv' => 'PDV',
                 'menu.modulos' => 'Módulos',
                 'loja.atual' => 'Loja ativa',
                 'loja.trocar' => 'Trocar',
@@ -1135,6 +1159,7 @@ class TextoSistemaSeeder extends Seeder
                 'whatsapp.pagamento' => 'Pagamento',
                 'whatsapp.endereco' => 'Endereço',
                 'whatsapp.total' => 'Total',
+                'erro.desativado' => 'O módulo Delivery (vendas online) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.',
             ],
 
             // ================= ADMIN: RELATÓRIOS =================

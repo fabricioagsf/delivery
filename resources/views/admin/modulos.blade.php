@@ -7,6 +7,7 @@
 <div class="tabela-rolagem">
     <section class="painel-admin">
         <p class="nota-segura nota-segura--admin">{{ texto('admin_modulos', 'nota.banco', 'Os módulos são ligados e desligados APENAS direto no banco de dados, na tabela modulos: flag ativo = 1 (ligado) ou 0 (desligado). Esta tela apenas mostra o estado atual — não altere por aqui.') }}</p>
+        <p class="nota-segura nota-segura--admin">{{ texto('admin_modulos', 'nota.operacao', 'Os módulos PDV (mesas, tablet e caixa) e Delivery (vendas online) definem o modo de operação da loja: delivery, PDV ou ambos — cada filial pode ter o seu próprio modo.') }}</p>
         <p class="nota-segura nota-segura--admin">{{ texto('admin_modulos', 'nota.escopo', 'Mostrando o estado para a loja ativa. Linha com loja própria vale para ela; senão vale a regra global (loja NULL).') }}</p>
 
         @forelse($modulos as $modulo)

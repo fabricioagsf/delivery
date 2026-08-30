@@ -11,8 +11,12 @@ use Illuminate\Http\Request;
 
 class MesaController extends Controller
 {
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         $mesas = Mesa::query()->orderBy('id')->get();
 
         return view('admin.mesas', [
@@ -20,13 +24,21 @@ class MesaController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         return view('admin.mesas_form', ['mesa' => new Mesa]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         $dados = $this->validar($request);
 
         Mesa::create($dados);
@@ -36,13 +48,21 @@ class MesaController extends Controller
             ->with('sucesso_mesas', texto('admin_mesas', 'sucesso.criado', 'Mesa criada!'));
     }
 
-    public function edit(Mesa $mesa): View
+    public function edit(Mesa $mesa): View|RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         return view('admin.mesas_form', ['mesa' => $mesa]);
     }
 
     public function update(Request $request, Mesa $mesa): RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         $dados = $this->validar($request, $mesa);
 
         $mesa->update($dados);
@@ -57,6 +77,10 @@ class MesaController extends Controller
      */
     public function alternarStatus(Mesa $mesa): JsonResponse
     {
+        if (! modulo_ativo('pdv')) {
+            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
+        }
+
         $mesa->update(['ativo' => !$mesa->ativo]);
 
         return response()->json([
@@ -65,6 +89,20 @@ class MesaController extends Controller
                 : texto('admin_mesas', 'sucesso.inativa', 'Mesa inativada'),
             'ativo' => $mesa->ativo,
         ]);
+    }
+
+    /**
+     * Gate do módulo PDV: bloqueia o CRUD de mesas quando o PDV está desligado.
+     */
+    protected function exigirPdv(): ?RedirectResponse
+    {
+        if (! modulo_ativo('pdv')) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('erro_modulo_caixa', texto('admin_caixa', 'erro.desativado', 'O módulo PDV (mesas, tablet e caixa) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.'));
+        }
+
+        return null;
     }
 
     protected function validar(Request $request, ?Mesa $mesa = null): array

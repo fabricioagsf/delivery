@@ -158,9 +158,14 @@ if (! function_exists('status_pilula')) {
 if (! function_exists('forma_pagamento_label')) {
     /**
      * Rótulo da forma de pagamento (tabela textos, página 'pagamentos').
+     * NULL = a forma ainda não foi definida (pedido de mesa sem fechamento).
      */
-    function forma_pagamento_label(string $forma): string
+    function forma_pagamento_label(?string $forma): string
     {
+        if ($forma === null || $forma === '') {
+            return texto('pagamentos', 'forma.indefinido', 'A definir');
+        }
+
         return texto('pagamentos', 'forma.'.$forma, ucfirst($forma));
     }
 }
@@ -277,6 +282,49 @@ if (! function_exists('modulo_ativo')) {
         }
 
         return $cache[$slug];
+    }
+}
+
+if (! function_exists('canal_atual')) {
+    /**
+     * Canal de venda em vigor na sessão de compra:
+     * 'pdv' quando o cliente está no fluxo de mesa (QR/tablet), 'delivery'
+     * quando está navegando online (site). Determina qual módulo vale.
+     */
+    function canal_atual(): string
+    {
+        return mesa_sessao_id() !== null ? 'pdv' : 'delivery';
+    }
+}
+
+if (! function_exists('modulo_off_view')) {
+    /**
+     * Página pública de aviso quando um canal (módulo) está desligado no banco.
+     * 'delivery' = vendas online; 'pdv' = atendimento na mesa (QR/tablet).
+     */
+    function modulo_off_view(string $canal): \Illuminate\Contracts\View\View
+    {
+        $ehMesa = $canal === 'pdv';
+
+        return view('erros.modulo_off', [
+            'codigo' => $ehMesa ? 'PDV' : 'DELIVERY',
+            'titulo' => texto('modulo_off', $ehMesa ? 'mesa.titulo' : 'delivery.titulo', $ehMesa ? 'Atendimento na mesa desativado' : 'Vendas online desativadas'),
+            'mensagem' => texto('modulo_off', $ehMesa ? 'mesa.texto' : 'delivery.texto', $ehMesa ? 'O atendimento pela mesa está desativado nesta unidade. Faça o seu pedido pelo delivery online.' : 'As vendas online estão desativadas nesta unidade. Faça o seu pedido na mesa ou volte em breve.'),
+        ]);
+    }
+}
+
+if (! function_exists('modulo_off_json')) {
+    /** Resposta JSON (403) quando o canal da sessão está desligado. */
+    function modulo_off_json(string $canal): \Illuminate\Http\JsonResponse
+    {
+        $ehMesa = $canal === 'pdv';
+
+        return response()->json([
+            'mensagem' => $ehMesa
+                ? texto('modulo_off', 'mesa.titulo', 'Atendimento na mesa desativado')
+                : texto('modulo_off', 'delivery.titulo', 'Vendas online desativadas'),
+        ], 403);
     }
 }
 

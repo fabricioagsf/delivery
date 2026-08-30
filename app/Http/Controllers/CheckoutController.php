@@ -20,6 +20,10 @@ class CheckoutController extends Controller
 
     public function index()
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_view(canal_atual());
+        }
+
         if ($this->carrinho->contagem() === 0) {
             return redirect()
                 ->route('carrinho.index')
@@ -54,6 +58,10 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
+        if (! modulo_ativo(canal_atual())) {
+            abort(403, texto('modulo_off', canal_atual() === 'pdv' ? 'mesa.titulo' : 'delivery.titulo', canal_atual() === 'pdv' ? 'Atendimento na mesa desativado' : 'Vendas online desativadas'));
+        }
+
         if ($this->carrinho->contagem() === 0) {
             return redirect()
                 ->route('carrinho.index')
@@ -249,6 +257,10 @@ class CheckoutController extends Controller
 
     public function validarCupom(Request $request): \Illuminate\Http\JsonResponse
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_json(canal_atual());
+        }
+
         $codigo = trim((string) $request->input('cupom_codigo', ''));
         $subtotal = (float) $request->input('subtotal', 0);
 
@@ -284,6 +296,10 @@ class CheckoutController extends Controller
 
     public function validarPontos(Request $request): \Illuminate\Http\JsonResponse
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_json(canal_atual());
+        }
+
         $subtotal = (float) $request->input('subtotal', 0);
         $servicoFidelidade = app(\App\Support\Fidelidade::class);
         $cliente = auth('cliente')->user();

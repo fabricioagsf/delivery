@@ -12,6 +12,10 @@ class VitrineController extends Controller
 {
     public function index(Request $request)
     {
+        if (! modulo_ativo('delivery')) {
+            return modulo_off_view('delivery');
+        }
+
         $slugCategoria = $request->query('categoria');
 
         $categorias = Categoria::query()

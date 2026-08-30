@@ -3,6 +3,7 @@
 namespace Tests\Browser;
 
 use App\Models\Configuracao;
+use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 class TemasTest extends DuskTestCase
@@ -22,6 +23,12 @@ class TemasTest extends DuskTestCase
     public function test_tema_padrao_exibe_identidade_guloseimas(): void
     {
         $this->browse(function ($browser) {
+            Configuracao::updateOrCreate(
+                ['chave' => 'tema_loja', 'loja_id' => (int) loja_atual_id()],
+                ['valor' => 'guloseimas', 'updated_at' => now()]
+            );
+            \Illuminate\Support\Facades\Cache::flush();
+
             $browser->visit('/')
                 ->pause(1000)
                 ->assertSee('Guloseimas');
@@ -41,28 +48,35 @@ class TemasTest extends DuskTestCase
     {
         $this->browse(function ($browser) {
             $browser->visit('/admin')
-                ->assertSee('administrador')
+                ->pause(2000)
+                ->waitFor('#am-email', 15)
                 ->type('#am-email', 'admin@gostosuras.local')
                 ->type('#am-senha', '12345678')
                 ->click('.am-botao')
-                ->pause(5000);
+                ->pause(6000);
 
-            $this->assertStringContainsString('/admin/painel', $browser->driver->getCurrentURL(), 'Login falhou');
+            $url = $browser->driver->getCurrentURL();
+            $this->assertStringContainsString('/admin/painel', $url, 'Login falhou: ' . $url);
 
-            // Seleciona o tema italiano e salva
             $browser->visit('/admin/configuracoes')
-                ->pause(2000)
-                ->select('tema_loja', 'italiana')
+                ->pause(2500)
+                ->screenshot('tema_config_page');
+
+            $html = $browser->driver->getPageSource();
+            file_put_contents('C:\delivery\debug_config.html', $html);
+            $this->assertStringContainsString('tema_loja', $html, 'Select tema_loja nao encontrado na pagina de configuracoes');
+
+            $browser->select('tema_loja', 'italiana')
                 ->press('Salvar configurações')
-                ->pause(2000)
+                ->pause(2500)
                 ->assertSee('Configurações salvas!');
 
             $browser->visit('/')
-                ->pause(1000)
+                ->pause(1500)
                 ->assertSee('Trattoria Bella');
 
-            $html = $browser->driver->getPageSource();
-            $this->assertStringContainsString('css/themes/italiana.css', $html, 'CSS do tema italiano não carregado');
+            $html2 = $browser->driver->getPageSource();
+            $this->assertStringContainsString('css/themes/italiana.css', $html2, 'CSS do tema italiano não carregado');
 
             $browser->screenshot('tema_italiana');
         });

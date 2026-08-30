@@ -179,6 +179,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/mesa/{mesa}/pedido', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'pedir'])->name('mesa.pedido');
         Route::post('/mesa/{mesa}/pedido/confirmar', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'confirmarPedido'])->name('mesa.pedidoConfirmar');
+        Route::post('/pedidos/{pedido}/entregue-mesa', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'entregueMesa'])->name('pedidos.entregueMesa');
 
         Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.index');
         Route::get('/caixa/estado', [CaixaController::class, 'estado'])->name('caixa.estado');

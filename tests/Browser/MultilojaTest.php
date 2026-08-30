@@ -7,6 +7,7 @@ use App\Models\Pedido;
 use App\Models\Produto;
 use App\Models\ProdutoEstoque;
 use Fabricioagsf\AuthMulti\Models\Tenant as Loja;
+use Illuminate\Support\Facades\DB;
 use Tests\DuskTestCase;
 
 class MultilojaTest extends DuskTestCase
@@ -48,7 +49,7 @@ class MultilojaTest extends DuskTestCase
         $codigoMatriz = 'ISO-M-' . now()->timestamp;
         $codigoFilial = 'ISO-F-' . now()->timestamp;
 
-        Pedido::create([
+        DB::table('pedidos')->insert([
             'loja_id' => $matrizId,
             'codigo' => $codigoMatriz,
             'nome_cliente' => 'Cliente Isolamento',
@@ -58,9 +59,11 @@ class MultilojaTest extends DuskTestCase
             'subtotal' => 0,
             'total' => 0,
             'status' => 'novo',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        Pedido::create([
+        DB::table('pedidos')->insert([
             'loja_id' => $filialId,
             'codigo' => $codigoFilial,
             'nome_cliente' => 'Cliente Isolamento',
@@ -70,16 +73,20 @@ class MultilojaTest extends DuskTestCase
             'subtotal' => 0,
             'total' => 0,
             'status' => 'novo',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        $this->browse(function ($browser) use ($filialId, $codigoMatriz, $codigoFilial) {
-            $browser->visit('/admin')
-                ->type('#am-email', 'admin@gostosuras.local')
-                ->type('#am-senha', '12345678')
-                ->click('.am-botao')
-                ->pause(5000);
+            $this->browse(function ($browser) use ($filialId, $codigoMatriz, $codigoFilial) {
+                $browser->visit('/admin')
+                    ->pause(2000)
+                    ->waitFor('#am-email', 15)
+                    ->type('#am-email', 'admin@gostosuras.local')
+                    ->type('#am-senha', '12345678')
+                    ->click('.am-botao')
+                    ->pause(6000);
 
-            $this->assertStringContainsString('/admin/painel', $browser->driver->getCurrentURL());
+                $this->assertStringContainsString('/admin/painel', $browser->driver->getCurrentURL());
 
             // Matriz → vê pedido da matriz, NÃO vê da filial
             $browser->visit('/admin/pedidos')
@@ -91,8 +98,8 @@ class MultilojaTest extends DuskTestCase
             $browser->script("
                 var form = document.querySelector('form[action=\"/admin/lojas/trocar\"]');
                 if (form) {
-                    var select = form.querySelector('select[name=\"loja_id\"]');
-                    if (select) { select.value = '$filialId'; form.submit(); }
+                    var input = form.querySelector('input[name=\"loja_id\"]');
+                    if (input) { input.value = '$filialId'; form.submit(); }
                 } else {
                     console.log('Formulario de troca de loja NAO encontrado!');
                 }

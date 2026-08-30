@@ -13,6 +13,10 @@ class Pedido extends Model
     use Auditoravel;
     use PossuiLoja;
 
+    protected $casts = [
+        'entregue_mesa_em' => 'datetime',
+    ];
+
     protected $fillable = [
         'loja_id',
         'codigo',
@@ -43,9 +47,25 @@ class Pedido extends Model
         'pontos_desconto',
         'observacoes',
         'status',
+        'entregue_mesa_em',
         'pagamento_status',
         'pagamento_id',
     ];
+
+    /**
+     * Conta em aberto da mesa: pedidos em andamento (novo/em_preparo/em_entrega)
+     * mais os já entregues na mesa que ainda não foram pagos no caixa.
+     * Após o pagamento (pagamento_status = pago), o pedido sai da conta.
+     */
+    public function scopeContaAberta($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+                ->orWhere(function ($q2) {
+                    $q2->where('status', 'entregue')->whereNull('pagamento_status');
+                });
+        });
+    }
 
     public function itens(): HasMany
     {

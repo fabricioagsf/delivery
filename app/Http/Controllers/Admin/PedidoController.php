@@ -18,13 +18,22 @@ class PedidoController extends Controller
 {
     public const STATUS = ['novo', 'em_preparo', 'em_entrega', 'entregue', 'cancelado'];
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if (! modulo_ativo('delivery')) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('erro_modulo_canal', texto('admin_pedidos', 'erro.desativado', 'O módulo Delivery (vendas online) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.'));
+        }
+
         $status = $request->query('status');
         $tipo = $request->query('tipo');
         $busca = $request->query('q');
 
+        // Lista só os pedidos do canal online (site). Pedidos de mesa vivem no
+        // PDV (controle + caixa) — a separação é pela origem, não pelo tipo.
         $pedidos = Pedido::query()
+            ->whereNull('mesa_id')
             ->withCount('itens')
             ->when(in_array($status, self::STATUS, true), fn ($q) => $q->where('status', $status))
             ->when(in_array($tipo, ['entrega', 'retirada'], true), fn ($q) => $q->where('tipo_entrega', $tipo))
@@ -37,6 +46,7 @@ class PedidoController extends Controller
             ->withQueryString();
 
         $contagemStatus = Pedido::query()
+            ->whereNull('mesa_id')
             ->selectRaw('status, COUNT(*) as total')
             ->groupByRaw('status')
             ->pluck('total', 'status');
@@ -51,8 +61,12 @@ class PedidoController extends Controller
         ]);
     }
 
-    public function show(Pedido $pedido): View
+    public function show(Pedido $pedido): View|RedirectResponse
     {
+        if (! modulo_ativo($this->canalDoPedido($pedido))) {
+            return $this->redirecionarCanal($pedido);
+        }
+
         return view('admin.pedidos_detalhe', [
             'pedido' => $pedido->load(['itens', 'cliente']),
         ]);
@@ -60,6 +74,10 @@ class PedidoController extends Controller
 
     public function atualizarStatus(Request $request, Pedido $pedido): JsonResponse
     {
+        if (! modulo_ativo($this->canalDoPedido($pedido))) {
+            return response()->json(['mensagem' => $this->mensagemCanal($pedido)], 403);
+        }
+
         $dados = $request->validate([
             'status' => ['required', Rule::in(self::STATUS)],
         ]);
@@ -96,6 +114,10 @@ class PedidoController extends Controller
      */
     public function gerarNota(Pedido $pedido): RedirectResponse
     {
+        if (! modulo_ativo($this->canalDoPedido($pedido))) {
+            return $this->redirecionarCanal($pedido);
+        }
+
         if (config_loja('emitir_nfe') !== '1') {
             return back()->with('erro_nota', texto('admin_pedidos', 'nota.desligada', 'A emissão de nota está desligada — ative em Configurações.'));
         }
@@ -129,6 +151,10 @@ class PedidoController extends Controller
      */
     public function enviarWhatsApp(Pedido $pedido): RedirectResponse
     {
+        if (! modulo_ativo($this->canalDoPedido($pedido))) {
+            return $this->redirecionarCanal($pedido);
+        }
+
         $telefone = $pedido->telefone;
 
         if (empty($telefone)) {
@@ -157,6 +183,25 @@ class PedidoController extends Controller
         return back()
             ->with('whatsapp_link', $link)
             ->with('erro_whatsapp', ($resultado['erro'] ?? '').' '.texto('admin_pedidos', 'whatsapp.fallback', 'Use o link abaixo para enviar manualmente.'));
+    }
+
+    protected function canalDoPedido(Pedido $pedido): string
+    {
+        return $pedido->mesa_id !== null ? 'pdv' : 'delivery';
+    }
+
+    protected function mensagemCanal(Pedido $pedido): string
+    {
+        return $pedido->mesa_id !== null
+            ? texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')
+            : texto('admin_pedidos', 'erro.desativado', 'O módulo Delivery (vendas online) está desligado.');
+    }
+
+    protected function redirecionarCanal(Pedido $pedido): RedirectResponse
+    {
+        return redirect()
+            ->route('admin.dashboard')
+            ->with('erro_modulo_canal', $this->mensagemCanal($pedido));
     }
 
     protected function montarMensagemPedido(Pedido $pedido): string

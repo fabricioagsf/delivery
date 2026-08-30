@@ -31,6 +31,14 @@ class CardapioController extends Controller
             }
         }
 
+        // O cardápio atende os dois canais: com ?mesa= (ou sessão de mesa ativa)
+        // é o fluxo do PDV (QR na mesa); senão é o cardápio online (delivery).
+        $canal = ($mesa ?? mesa_sessao()) !== null ? 'pdv' : 'delivery';
+
+        if (! modulo_ativo($canal)) {
+            return modulo_off_view($canal);
+        }
+
         $categorias = Categoria::query()
             ->where('ativo', true)
             ->with(['produtos' => fn ($q) => $q

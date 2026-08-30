@@ -26,9 +26,9 @@ class CaixaController extends Controller
 
     public function index(): View|RedirectResponse
     {
-        if (! modulo_ativo('caixa')) {
+        if (! modulo_ativo('pdv')) {
             return redirect()->route('admin.dashboard')
-                ->with('erro_modulo_caixa', texto('admin_caixa', 'erro.desativado', 'O módulo Caixa está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.'));
+                ->with('erro_modulo_caixa', texto('admin_caixa', 'erro.desativado', 'O módulo PDV (mesas, tablet e caixa) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.'));
         }
 
         $mesas = Mesa::query()->ativas()->orderBy('id')->get();
@@ -40,8 +40,8 @@ class CaixaController extends Controller
 
     public function estado(): JsonResponse
     {
-        if (! modulo_ativo('caixa')) {
-            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo Caixa está desligado.')], 403);
+        if (! modulo_ativo('pdv')) {
+            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
         }
 
         $lojaId = loja_atual_id();
@@ -50,7 +50,7 @@ class CaixaController extends Controller
         $pedidosPorMesa = Pedido::query()
             ->where('loja_id', $lojaId)
             ->whereIn('mesa_id', $mesas->pluck('id'))
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->orderBy('created_at')
             ->get(['id', 'mesa_id', 'codigo', 'status', 'total', 'created_at', 'nome_cliente', 'forma_pagamento']);
 
@@ -76,14 +76,14 @@ class CaixaController extends Controller
      */
     public function conta(Mesa $mesa): JsonResponse
     {
-        if (! modulo_ativo('caixa')) {
-            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo Caixa está desligado.')], 403);
+        if (! modulo_ativo('pdv')) {
+            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
         }
 
         $pedidos = Pedido::query()
             ->where('loja_id', loja_atual_id())
             ->where('mesa_id', $mesa->id)
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->with(['itens' => fn ($q) => $q->orderBy('id')])
             ->orderBy('created_at')
             ->get();
@@ -103,6 +103,7 @@ class CaixaController extends Controller
                     'pagamento' => $p->forma_pagamento,
                     'observacoes' => $p->observacoes,
                     'quando' => optional($p->created_at)->format('H:i'),
+                    'total' => (float) $p->total,
                     'itens' => $p->itens->map(fn ($i) => [
                         'nome' => $i->nome_produto,
                         'quantidade' => (int) $i->quantidade,
@@ -152,8 +153,8 @@ class CaixaController extends Controller
      */
     public function pixEfi(Mesa $mesa): JsonResponse
     {
-        if (! modulo_ativo('caixa')) {
-            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo Caixa está desligado.')], 403);
+        if (! modulo_ativo('pdv')) {
+            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
         }
 
         if (! app(Efi::class)->disponivel()) {
@@ -166,7 +167,7 @@ class CaixaController extends Controller
         $pedidos = Pedido::query()
             ->where('loja_id', loja_atual_id())
             ->where('mesa_id', $mesa->id)
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->get();
 
         if ($pedidos->isEmpty()) {
@@ -195,8 +196,8 @@ class CaixaController extends Controller
 
     public function fechar(Request $request, Mesa $mesa): JsonResponse
     {
-        if (! modulo_ativo('caixa')) {
-            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo Caixa está desligado.')], 403);
+        if (! modulo_ativo('pdv')) {
+            return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
         }
 
         try {
@@ -218,7 +219,7 @@ class CaixaController extends Controller
         $pedidos = Pedido::query()
             ->where('loja_id', loja_atual_id())
             ->where('mesa_id', $mesa->id)
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->get();
 
         if ($pedidos->isEmpty()) {

@@ -14,6 +14,10 @@ class CarrinhoController extends Controller
 
     public function index(): View
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_view(canal_atual());
+        }
+
         $itens = $this->carrinho->itens();
 
         if (! empty($itens)) {
@@ -38,6 +42,10 @@ class CarrinhoController extends Controller
 
     public function adicionar(Request $request): JsonResponse
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_json(canal_atual());
+        }
+
         $dados = $request->validate([
             'produto_id' => ['required', 'integer'],
             'quantidade' => ['nullable', 'integer', 'min:1', 'max:99'],
@@ -110,6 +118,10 @@ class CarrinhoController extends Controller
 
     public function atualizar(Request $request): JsonResponse
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_json(canal_atual());
+        }
+
         $dados = $request->validate([
             'chave' => ['required', 'string'],
             'quantidade' => ['required', 'integer', 'min:0', 'max:99'],
@@ -145,6 +157,10 @@ class CarrinhoController extends Controller
 
     public function remover(Request $request): JsonResponse
     {
+        if (! modulo_ativo(canal_atual())) {
+            return modulo_off_json(canal_atual());
+        }
+
         $dados = $request->validate([
             'chave' => ['required', 'string'],
         ]);

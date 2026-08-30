@@ -813,6 +813,7 @@ td { vertical-align: middle; }
 .cartao-mesa--livre { border-color: var(--mesa-livre-borda); background: var(--mesa-livre-bg); }
 .cartao-mesa--em-preparo { border-color: var(--mesa-preparo-borda); background: var(--mesa-preparo-bg); }
 .cartao-mesa--em-entrega { border-color: var(--mesa-entrega-borda); background: var(--mesa-entrega-bg); }
+.cartao-mesa--entregue-mesa { border-color: #2c8a4a; background: #e6f4eb; }
 .cartao-mesa--novo {
     border-color: var(--mesa-novo-borda); background: var(--mesa-novo-bg);
     animation: piscar-novo 1.1s ease-in-out infinite;
@@ -917,10 +918,26 @@ td { vertical-align: middle; }
 .modal-mesa__detalhe-pedido { font-size: .82rem; color: var(--chocolate-medio); display: flex; gap: 10px; flex-wrap: wrap; }
 
 .modal-mesa__itens { list-style: none; margin: 0; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
-.modal-mesa__item { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; }
+.modal-mesa__item { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; align-items: center; }
 .modal-mesa__item-nome { color: var(--chocolate); flex: 1; }
+.modal-mesa__item-qtd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 27px; height: 27px; padding: 0 7px; border-radius: 8px;
+    background: var(--creme-forte); color: var(--chocolate);
+    font-size: .78rem; font-weight: 800;
+}
 .modal-mesa__item-complementos { display: block; font-size: .78rem; color: var(--chocolate-medio); margin-top: 1px; }
 .modal-mesa__item-valor { font-weight: 700; color: var(--chocolate); white-space: nowrap; }
+
+.modal-mesa__status-pilula {
+    font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; border: 1px solid transparent;
+    white-space: nowrap;
+}
+.modal-mesa__status-pilula--novo { background: var(--mesa-novo-bg); color: var(--mesa-novo-borda); border-color: var(--mesa-novo-borda); }
+.modal-mesa__status-pilula--em-preparo { background: var(--mesa-preparo-bg); color: #8a5f1a; border-color: var(--mesa-preparo-borda); }
+.modal-mesa__status-pilula--em-entrega { background: var(--mesa-entrega-bg); color: #2c5f8a; border-color: var(--mesa-entrega-borda); }
+.modal-mesa__status-pilula--entregue { background: var(--mesa-entregue-bg, #dff2e3); color: #1d6b34; border-color: var(--mesa-entregue-borda, #3a9d5f); }
 
 .modal-mesa__rodape-pedido {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -946,6 +963,14 @@ td { vertical-align: middle; }
     background: linear-gradient(180deg, var(--cor-primaria), var(--cor-primaria-escura));
     color: #fff;
 }
+.modal-mesa__acoes-botao--entregue-mesa {
+    background: #2c8a4a; border-color: #2c8a4a; color: #fff;
+}
+.modal-mesa__acoes-botao--entregue-mesa:hover { filter: brightness(1.06); }
+.modal-mesa__acoes-botao--entregue-mesa.is-loading { opacity: .6; cursor: progress; }
+.modal-mesa__acoes-botao--entregue-mesa.is-done { background: #1f5f33; border-color: #1f5f33; cursor: default; }
+.modal-mesa__selo-entregue { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: #1f5f33; font-weight: 700; padding: 4px 10px; background: #e6f4eb; border-radius: 999px; }
+.modal-mesa__acoes { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* Mesa livre no modal */
 .modal-mesa__vazio {
@@ -1091,6 +1116,28 @@ td { vertical-align: middle; }
 
 .caixa-pedido { border-left-color: var(--cor-primaria-escura); }
 
+/* Caixa: pedidos à esquerda + fechamento fixo à direita (aproveita o espaço) */
+.modal-mesa--caixa .modal-mesa__corpo {
+    display: grid; grid-template-columns: minmax(0, 1fr) 380px; align-items: start;
+}
+.caixa-pedidos { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.caixa-fechamento {
+    position: sticky; top: 0;
+    display: flex; flex-direction: column; gap: 16px;
+    background: #fff; border: 1px solid var(--creme-forte);
+    border-radius: 14px; padding: 16px; box-shadow: var(--sombra);
+}
+.caixa-fechamento .modal-mesa__total-mesa {
+    position: static; margin: 0; border: 0; border-bottom: 1px dashed var(--creme-forte);
+    border-radius: 0; padding: 0 0 14px;
+}
+.caixa-fechamento .caixa-form { margin-top: 0; padding-top: 0; border-top: 0; }
+
+@media (max-width: 1100px) {
+    .modal-mesa--caixa .modal-mesa__corpo { grid-template-columns: 1fr; }
+    .caixa-fechamento { position: static; }
+}
+
 .caixa-form {
     margin-top: 14px; padding-top: 14px;
     border-top: 1px solid var(--creme-forte);
@@ -1145,6 +1192,34 @@ td { vertical-align: middle; }
 .aviso-estoque-baixo { margin: 8px 0 0; font-size: .75rem; color: var(--alerta); }
 
 .mesa-pedido__pedido { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--branco); border: 1px solid var(--creme-forte); border-radius: var(--raio); box-shadow: var(--sombra); max-height: calc(100vh - 110px); }
+
+/* Pedidos em aberto da mesa (tablet do garçom) */
+.mesa-pedido__abertos {
+    padding: 12px 14px; background: var(--branco); border: 1px solid var(--creme-forte);
+    border-radius: var(--raio); box-shadow: var(--sombra);
+}
+.mesa-pedido__abertos-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.mesa-pedido__abertos-cabecalho h3 { margin: 0; font-size: .95rem; color: var(--chocolate); }
+.mesa-pedido__abertos-conta {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px;
+    padding: 0 7px; border-radius: 999px; background: var(--creme-forte); color: var(--chocolate);
+    font-size: .85rem; font-weight: 800;
+}
+.mesa-pedido__abertos-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mesa-pedido__aberto {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 12px; background: #fff; border: 1px solid var(--creme-forte); border-radius: 10px;
+}
+.mesa-pedido__aberto-codigo { font-weight: 800; color: var(--chocolate); font-size: .88rem; margin-right: auto; }
+.mesa-pedido__aberto-status {
+    font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px;
+}
+.mesa-pedido__aberto-status--novo { background: var(--mesa-novo-bg); color: var(--mesa-novo-borda); border: 1px solid var(--mesa-novo-borda); }
+.mesa-pedido__aberto-status--em-preparo { background: var(--mesa-preparo-bg); color: #8a5f1a; border: 1px solid var(--mesa-preparo-borda); }
+.mesa-pedido__aberto-status--em-entrega { background: var(--mesa-entrega-bg); color: #2c5f8a; border: 1px solid var(--mesa-entrega-borda); }
+.mesa-pedido__aberto-entregue { font-size: .82rem; font-weight: 700; color: #1f5f33; background: #e6f4eb; padding: 5px 12px; border-radius: 999px; }
+.mesa-pedido__aberto-entregar { margin-left: auto; }
 .mesa-pedido__pedido-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mesa-pedido__pedido-cabecalho h3 { margin: 0; font-size: 1rem; color: var(--chocolate); }
 .mesa-pedido__pedido-contador { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 999px; background: var(--cor-primaria); color: var(--cor-primaria-texto); font-size: .85rem; font-weight: 700; }

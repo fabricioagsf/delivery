@@ -15,9 +15,9 @@ class ModuloSeeder extends Seeder
     public function run(): void
     {
         $modulos = [
-            ['slug' => 'caixa', 'nome' => 'Caixa (contas de mesa)', 'ativo' => true],
+            ['slug' => 'pdv', 'nome' => 'PDV (mesas, tablet e caixa)', 'ativo' => true],
+            ['slug' => 'delivery', 'nome' => 'Delivery (vendas online)', 'ativo' => true],
             ['slug' => 'item_venda', 'nome' => 'Produtos e serviços', 'ativo' => true],
-            ['slug' => 'mesas', 'nome' => 'Mesas (QR)', 'ativo' => true],
             ['slug' => 'fidelidade', 'nome' => 'Fidelidade / pontos', 'ativo' => true],
             ['slug' => 'cupons', 'nome' => 'Cupons de desconto', 'ativo' => true],
         ];

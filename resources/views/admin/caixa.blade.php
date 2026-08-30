@@ -37,7 +37,7 @@
     </div>
 </div>
 
-<div class="modal-mesa" id="modal-caixa" hidden>
+<div class="modal-mesa modal-mesa--caixa" id="modal-caixa" hidden>
     <div class="modal-mesa__velo" data-fechar-modal-caixa></div>
     <div class="modal-mesa__janela" role="dialog" aria-modal="true" aria-labelledby="modal-caixa-titulo">
         <header class="modal-mesa__cabecalho">
@@ -72,6 +72,10 @@
             modal_observacoes: @json(texto('admin_caixa', 'modal.observacoes', 'Observações')),
             modal_total_mesa: @json(texto('admin_caixa', 'modal.total_mesa', 'Total da conta')),
             modal_status: @json(texto('admin_caixa', 'modal.status', 'Status')),
+            status_novo: @json(texto('admin_mesas_controle', 'estado.novo', 'Aguardando preparo')),
+            status_em_preparo: @json(texto('admin_mesas_controle', 'estado.em_preparo', 'Em preparo')),
+            status_em_entrega: @json(texto('admin_mesas_controle', 'estado.em_entrega', 'Sendo entregue')),
+            status_entregue: @json(texto('admin_mesas_controle', 'estado.entregue', 'Entregue')),
             modal_horario: @json(texto('admin_caixa', 'modal.horario', 'Hora')),
             campo_forma_pagamento: @json(texto('admin_caixa', 'campo.forma_pagamento', 'Forma de pagamento')),
             campo_troco_para: @json(texto('admin_caixa', 'campo.troco_para', 'Valor recebido (R$)')),

@@ -421,15 +421,26 @@
             if (p.quando) detalhes.textContent += (textos.modal_horario || 'Hora') + ': ' + p.quando;
             cabecalho.appendChild(detalhes);
 
+            var statusPilulaMesa = document.createElement('span');
+            statusPilulaMesa.className = 'modal-mesa__status-pilula modal-mesa__status-pilula--' + String(p.status || '').replace(/_/g, '-');
+            statusPilulaMesa.textContent = textoEstado(p.status);
+            cabecalho.appendChild(statusPilulaMesa);
+
             var itens = document.createElement('ul');
             itens.className = 'modal-mesa__itens';
             (p.itens || []).forEach(function (i) {
                 var li = document.createElement('li');
                 li.className = 'modal-mesa__item';
+                if (i.quantidade > 1) {
+                    var qtd = document.createElement('span');
+                    qtd.className = 'modal-mesa__item-qtd';
+                    qtd.textContent = i.quantidade + '×';
+                    li.appendChild(qtd);
+                }
 
                 var nome = document.createElement('span');
                 nome.className = 'modal-mesa__item-nome';
-                nome.textContent = (i.quantidade > 1 ? (i.quantidade + '× ') : '') + i.nome;
+                nome.textContent = i.nome;
                 if (i.complementos && i.complementos.length) {
                     var comps = document.createElement('small');
                     comps.className = 'modal-mesa__item-complementos';
@@ -463,11 +474,56 @@
             total.textContent = 'Total: ' + formatarMoeda(p.total);
             rodape.appendChild(total);
 
+            var acoes = document.createElement('div');
+            acoes.className = 'modal-mesa__acoes';
+
+            if (['novo', 'em_preparo', 'em_entrega'].indexOf(p.status) !== -1 && !p.entregue_mesa_em) {
+                var btnEntregue = document.createElement('button');
+                btnEntregue.type = 'button';
+                btnEntregue.className = 'modal-mesa__acoes-botao modal-mesa__acoes-botao--entregue-mesa';
+                btnEntregue.textContent = textos.modal_entregar_mesa || 'Entregue na mesa';
+                btnEntregue.addEventListener('click', function () {
+                    if (! window.confirm(textos.modal_confirmar_entrega || 'Confirmar marcação de entregue na mesa?')) {
+                        return;
+                    }
+                    btnEntregue.disabled = true;
+                    btnEntregue.classList.add('is-loading');
+                    fetch((window.Rotas.pedidoEntregueMesa || '').replace('ID', p.id), {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': window.Rotas.csrfToken || ''
+                        }
+                    })
+                        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+                        .then(function () {
+                            btnEntregue.classList.remove('is-loading');
+                            btnEntregue.classList.add('is-done');
+                            btnEntregue.textContent = (textos.modal_entregue_mesa_horario || 'Entregue às') + ' ' + (new Date()).toLocaleTimeString().slice(0, 5);
+                        })
+                        .catch(function () {
+                            btnEntregue.disabled = false;
+                            btnEntregue.classList.remove('is-loading');
+                            alert(textos.modal_entregar_erro || 'Não foi possível marcar como entregue.');
+                        });
+                });
+                acoes.appendChild(btnEntregue);
+            } else if (p.entregue_mesa_em) {
+                var selo = document.createElement('span');
+                selo.className = 'modal-mesa__selo-entregue';
+                selo.textContent = (textos.modal_entregue_mesa_horario || 'Entregue às') + ' ' + p.entregue_mesa_em;
+                acoes.appendChild(selo);
+            }
+
             var link = document.createElement('a');
             link.className = 'modal-mesa__acoes-botao modal-mesa__acoes-botao--chefe';
             link.href = '/admin/pedidos/' + p.id;
             link.textContent = textos.modal_abrir_pedido || 'Abrir pedido';
-            rodape.appendChild(link);
+            acoes.appendChild(link);
+
+            rodape.appendChild(acoes);
 
             bloco.appendChild(rodape);
             return bloco;
@@ -731,6 +787,11 @@
             if (p.cliente) detalhes.textContent += (p.cliente) + ' · ';
             if (p.quando) detalhes.textContent += (textosCaixa.modal_horario || 'Hora') + ': ' + p.quando;
             cabecalho.appendChild(detalhes);
+
+            var statusPilula = document.createElement('span');
+            statusPilula.className = 'modal-mesa__status-pilula modal-mesa__status-pilula--' + String(p.status || '').replace(/_/g, '-');
+            statusPilula.textContent = textosCaixa['status_' + (p.status || '')] || p.status || '';
+            cabecalho.appendChild(statusPilula);
             bloco.appendChild(cabecalho);
 
             var itens = document.createElement('ul');
@@ -738,9 +799,15 @@
             (p.itens || []).forEach(function (i) {
                 var li = document.createElement('li');
                 li.className = 'modal-mesa__item';
+                if (i.quantidade > 1) {
+                    var qtd = document.createElement('span');
+                    qtd.className = 'modal-mesa__item-qtd';
+                    qtd.textContent = i.quantidade + '×';
+                    li.appendChild(qtd);
+                }
                 var nome = document.createElement('span');
                 nome.className = 'modal-mesa__item-nome';
-                nome.textContent = (i.quantidade > 1 ? (i.quantidade + '× ') : '') + i.nome;
+                nome.textContent = i.nome;
                 if (i.complementos && i.complementos.length) {
                     var comps = document.createElement('small');
                     comps.className = 'modal-mesa__item-complementos';
@@ -1095,8 +1162,10 @@
                 return;
             }
 
+            var colunaPedidos = document.createElement('div');
+            colunaPedidos.className = 'caixa-pedidos';
             dados.pedidos.forEach(function (p) {
-                modalCaixaCorpo.appendChild(criarBlocoConta(p));
+                colunaPedidos.appendChild(criarBlocoConta(p));
             });
 
             var totalMesa = document.createElement('p');
@@ -1105,9 +1174,14 @@
             var valorTotal = document.createElement('strong');
             valorTotal.textContent = formatarMoeda(dados.total);
             totalMesa.appendChild(valorTotal);
-            modalCaixaCorpo.appendChild(totalMesa);
 
-            modalCaixaCorpo.appendChild(montarFormaPagamento(dados, payload.pix || {}));
+            var colunaFechamento = document.createElement('div');
+            colunaFechamento.className = 'caixa-fechamento';
+            colunaFechamento.appendChild(totalMesa);
+            colunaFechamento.appendChild(montarFormaPagamento(dados, payload.pix || {}));
+
+            modalCaixaCorpo.appendChild(colunaPedidos);
+            modalCaixaCorpo.appendChild(colunaFechamento);
 
             if (modalCaixa) modalCaixa.hidden = false;
         }
@@ -1501,8 +1575,7 @@
             enviar(window.Rotas.mesaPedidoConfirmar, {
                 itens: itens,
                 nome_cliente: document.querySelector('[name="nome_cliente"]')?.value || '',
-                observacoes: document.querySelector('[name="observacoes"]')?.value || '',
-                forma_pagamento: document.querySelector('[name="forma_pagamento"]')?.value || 'pix'
+                observacoes: document.querySelector('[name="observacoes"]')?.value || ''
             }).then(function (r) {
                 toast(r.mensagem);
                 linhasMesa = {};
@@ -1516,5 +1589,37 @@
         }
 
         if (enviarPedidoMesa) enviarPedidoMesa.addEventListener('click', confirmarPedidoMesa);
+
+        document.addEventListener('click', function (evento) {
+            var botaoEntregar = evento.target.closest('[data-entregar-pedido]');
+            if (!botaoEntregar) return;
+
+            var linha = botaoEntregar.closest('[data-pedido-id]');
+            var pedidoId = linha && linha.getAttribute('data-pedido-id');
+            if (!pedidoId) return;
+
+            textosMesa = textosMesaAtuais();
+            if (! window.confirm(textosMesa.abertos_confirmar_entrega || 'Confirmar marcação de entregue na mesa?')) {
+                return;
+            }
+            var rotulo = botaoEntregar.textContent;
+            botaoEntregar.disabled = true;
+            botaoEntregar.textContent = textosMesa.abertos_entregando || 'Marcando...';
+
+            enviar((window.Rotas.pedidoEntregueMesa || '').replace('ID', pedidoId), {})
+                .then(function () {
+                    var selo = document.createElement('span');
+                    selo.className = 'mesa-pedido__aberto-entregue';
+                    var agora = new Date().toLocaleTimeString().slice(0, 5);
+                    selo.textContent = (textosMesa.abertos_entregue_as || 'Entregue às :hora').replace(':hora', agora);
+                    botaoEntregar.replaceWith(selo);
+                    toast(textosMesa.sucesso_entregue || 'Pedido marcado como entregue na mesa!');
+                })
+                .catch(function (erro) {
+                    botaoEntregar.disabled = false;
+                    botaoEntregar.textContent = rotulo;
+                    toast(erro.message, 'erro');
+                });
+        });
     }
 })();

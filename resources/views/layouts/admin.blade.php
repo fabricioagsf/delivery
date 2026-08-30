@@ -44,12 +44,9 @@
             </a>
 
             <p class="lateral__grupo">{{ texto('admin_layout', 'categoria.vendas', 'Vendas') }}</p>
-            <a href="{{ route('admin.pedidos.index') }}" class="{{ request()->routeIs('admin.pedidos.*') ? 'ativo' : '' }}">
-                {{ texto('admin_layout', 'menu.pedidos', 'Pedidos') }}
-            </a>
-            @if(modulo_ativo('caixa'))
-                <a href="{{ route('admin.caixa.index') }}" class="{{ request()->routeIs('admin.caixa*') ? 'ativo' : '' }}">
-                    {{ texto('admin_layout', 'menu.caixa', 'Caixa') }}
+            @if(modulo_ativo('delivery'))
+                <a href="{{ route('admin.pedidos.index') }}" class="{{ request()->routeIs('admin.pedidos.*') ? 'ativo' : '' }}">
+                    {{ texto('admin_layout', 'menu.pedidos', 'Pedidos') }}
                 </a>
             @endif
             <a href="{{ route('admin.clientes.index') }}" class="{{ request()->routeIs('admin.clientes*') ? 'ativo' : '' }}">
@@ -58,6 +55,19 @@
             <a href="{{ route('admin.relatorios') }}" class="{{ request()->routeIs('admin.relatorios*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.relatorios', 'Relatórios') }}
             </a>
+
+            @if(modulo_ativo('pdv'))
+                <p class="lateral__grupo">{{ texto('admin_layout', 'categoria.pdv', 'PDV') }}</p>
+                <a href="{{ route('admin.caixa.index') }}" class="{{ request()->routeIs('admin.caixa*') ? 'ativo' : '' }}">
+                    {{ texto('admin_layout', 'menu.caixa', 'Caixa') }}
+                </a>
+                <a href="{{ route('admin.mesas-controle.index') }}" class="{{ request()->routeIs('admin.mesas-controle*') ? 'ativo' : '' }}">
+                    {{ texto('admin_layout', 'menu.mesas_controle', 'Pedidos das mesas') }}
+                </a>
+                <a href="{{ route('admin.mesas.index') }}" class="{{ request()->routeIs('admin.mesas*') && !request()->routeIs('admin.mesas-controle*') ? 'ativo' : '' }}">
+                    {{ texto('admin_layout', 'menu.mesas', 'Mesas (QR)') }}
+                </a>
+            @endif
 
             <p class="lateral__grupo">{{ texto('admin_layout', 'categoria.catalogo', 'Catálogo') }}</p>
             <a href="{{ route('admin.produtos.index') }}" class="{{ request()->routeIs('admin.produtos.*') ? 'ativo' : '' }}">
@@ -94,12 +104,6 @@
             <a href="{{ route('admin.pwa.index') }}" class="{{ request()->routeIs('admin.pwa*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.pwa', 'PWA / App') }}
             </a>
-            <a href="{{ route('admin.mesas.index') }}" class="{{ request()->routeIs('admin.mesas*') && !request()->routeIs('admin.mesas-controle*') ? 'ativo' : '' }}">
-                {{ texto('admin_layout', 'menu.mesas', 'Mesas (QR)') }}
-            </a>
-            <a href="{{ route('admin.mesas-controle.index') }}" class="{{ request()->routeIs('admin.mesas-controle*') ? 'ativo' : '' }}">
-                {{ texto('admin_layout', 'menu.mesas_controle', 'Pedidos das mesas') }}
-            </a>
             <a href="{{ route('admin.auditoria.index') }}" class="{{ request()->routeIs('admin.auditoria.*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.auditoria', 'Auditoria') }}
             </a>
@@ -129,8 +133,10 @@
         produtoAtivo: @json(route('admin.produtos.ativo', ['produto' => 'ID'])),
         produtoDestaque: @json(route('admin.produtos.destaque', ['produto' => 'ID'])),
         pedidoStatus: @json(route('admin.pedidos.status', ['pedido' => 'ID'])),
+        pedidoEntregueMesa: @json(route('admin.pedidos.entregueMesa', ['pedido' => 'ID'])),
         mesasControleEstado: @json(route('admin.mesas-controle.estado')),
-        mesasControleDetalhe: @json(route('admin.mesas-controle.detalhe', ['mesa' => '__ID__']))
+        mesasControleDetalhe: @json(route('admin.mesas-controle.detalhe', ['mesa' => '__ID__'])),
+        csrfToken: @json(csrf_token())
     };
 </script>
 <script src="{{ asset('js/admin.js') }}?v={{ filemtime(public_path('js/admin.js')) }}"></script>

@@ -29,6 +29,34 @@
         </div>
     </header>
 
+    @if($abertos->isNotEmpty())
+        <section class="mesa-pedido__abertos" id="mesa-pedido-abertos" aria-label="{{ texto('admin_mesa_pedido', 'abertos.rotulo', 'Pedidos em aberto desta mesa') }}">
+            <header class="mesa-pedido__abertos-cabecalho">
+                <h3>{{ texto('admin_mesa_pedido', 'abertos.titulo', 'Pedidos em aberto desta mesa') }}</h3>
+                <span class="mesa-pedido__abertos-conta">{{ $abertos->count() }}</span>
+            </header>
+            <ul class="mesa-pedido__abertos-lista">
+                @foreach($abertos as $pedido)
+                    <li class="mesa-pedido__aberto" data-pedido-id="{{ $pedido->id }}">
+                        <span class="mesa-pedido__aberto-codigo">#{{ $pedido->codigo }}</span>
+                        <span class="mesa-pedido__aberto-status mesa-pedido__aberto-status--{{ str_replace('_', '-', $pedido->status) }}">
+                            {{ texto('admin_mesas_controle', 'estado.'.$pedido->status, $pedido->status) }}
+                        </span>
+                        @if($pedido->entregue_mesa_em)
+                            <span class="mesa-pedido__aberto-entregue">
+                                {{ str_replace(':hora', $pedido->entregue_mesa_em->format('H:i'), texto('admin_mesa_pedido', 'abertos.entregue_as', 'Entregue às :hora')) }}
+                            </span>
+                        @elseif(in_array($pedido->status, ['novo', 'em_preparo', 'em_entrega'], true))
+                            <button type="button" class="botao botao--pequeno mesa-pedido__aberto-entregar" data-entregar-pedido>
+                                {{ texto('admin_mesa_pedido', 'abertos.entregar', 'Entregue na mesa') }}
+                            </button>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     <div class="mesa-pedido__layout">
         <section class="mesa-pedido__cardapio">
             <p class="nota-segura nota-segura--admin">
@@ -80,15 +108,6 @@
                     <textarea name="observacoes" maxlength="500" rows="2" placeholder="{{ texto('admin_mesa_pedido', 'campo.observacoes_ph', 'Ex.: sem castanhas') }}"></textarea>
                 </label>
 
-                <label class="mesa-pedido__campo">
-                    <span>{{ texto('admin_mesa_pedido', 'campo.forma_pagamento', 'Forma de pagamento (ajustada no fechamento)') }}</span>
-                    <select name="forma_pagamento">
-                        <option value="pix">{{ texto('pagamentos', 'forma.pix', 'Pix') }}</option>
-                        <option value="dinheiro">{{ texto('pagamentos', 'forma.dinheiro', 'Dinheiro') }}</option>
-                        <option value="cartao">{{ texto('pagamentos', 'forma.cartao', 'Cartão') }}</option>
-                    </select>
-                </label>
-
                 <p class="mesa-pedido__pedido-total">
                     <span>{{ texto('admin_mesa_pedido', 'cart.total', 'Total do pedido') }}</span>
                     <strong id="mesa-pedido-total">R$ 0,00</strong>
@@ -119,6 +138,11 @@
             'modal_remocoes' => texto('vitrine', 'modal.remocoes', 'Remoções'),
             'modal_vazio' => texto('vitrine', 'modal.vazio', 'Sem opções'),
             'modal_adicionar' => texto('admin_mesa_pedido', 'botao.adicionar_pedido', 'Adicionar ao pedido'),
+            'abertos_rotulo' => texto('admin_mesa_pedido', 'abertos.rotulo', 'Pedidos em aberto desta mesa'),
+            'abertos_entregue_as' => texto('admin_mesa_pedido', 'abertos.entregue_as', 'Entregue às :hora'),
+            'abertos_entregando' => texto('admin_mesa_pedido', 'abertos.entregando', 'Marcando...'),
+            'abertos_confirmar_entrega' => texto('admin_mesa_pedido', 'abertos.confirmar_entrega', 'Confirmar marcação de entregue na mesa?'),
+            'sucesso_entregue' => texto('admin_mesa_pedido', 'sucesso.entregue', 'Pedido marcado como entregue na mesa!'),
         ];
     @endphp
     <script>

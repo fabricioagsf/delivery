@@ -14,9 +14,9 @@ use Fabricioagsf\ItemVenda\ComplementoTipo;
 use Fabricioagsf\ItemVenda\ItemFactory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class MesaPedidosController extends Controller
@@ -25,8 +25,12 @@ class MesaPedidosController extends Controller
      * Tela de controle: grade com todas as mesas mostrando o status do
      * pedido em aberto (novo, em preparo, etc.). Atualiza por AJAX.
      */
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         $mesas = Mesa::query()->ativas()->orderBy('id')->get();
 
         return view('admin.mesas_pedidos', [
@@ -38,8 +42,12 @@ class MesaPedidosController extends Controller
      * Tela do tablet/garçom: escolhe a mesa e monta o pedido com o cardápio
      * real (produtos ativos + complementos), igual ao cliente pelo QR.
      */
-    public function pedir(Mesa $mesa): View
+    public function pedir(Mesa $mesa): View|RedirectResponse
     {
+        if ($bloqueio = $this->exigirPdv()) {
+            return $bloqueio;
+        }
+
         $categorias = Categoria::query()
             ->where('ativo', true)
             ->with(['produtos' => fn ($q) => $q
@@ -54,7 +62,7 @@ class MesaPedidosController extends Controller
         $abertos = Pedido::query()
             ->where('loja_id', loja_atual_id())
             ->where('mesa_id', $mesa->id)
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->get();
 
         return view('admin.mesa_pedido', [
@@ -74,6 +82,10 @@ class MesaPedidosController extends Controller
      */
     public function confirmarPedido(Request $request, Mesa $mesa): JsonResponse
     {
+        if (! modulo_ativo('pdv')) {
+            return $this->jsonModuloOff();
+        }
+
         try {
             $dados = $request->validate([
                 'itens' => ['required', 'array', 'min:1'],
@@ -83,12 +95,10 @@ class MesaPedidosController extends Controller
                 'itens.*.complementos.*' => ['integer'],
                 'nome_cliente' => ['nullable', 'string', 'max:120'],
                 'observacoes' => ['nullable', 'string', 'max:500'],
-                'forma_pagamento' => ['required', Rule::in(CaixaController::FORMAS)],
             ], [
                 'itens.required' => texto('admin_mesa_pedido', 'val.sem_itens', 'Escolha ao menos um item.'),
                 'itens.*.produto_id.required' => texto('admin_mesa_pedido', 'val.produto_obrigatorio', 'Falta o produto do item.'),
                 'itens.*.quantidade.min' => texto('admin_mesa_pedido', 'val.quantidade_invalida', 'Quantidade inválida.'),
-                'forma_pagamento.in' => texto('admin_mesa_pedido', 'val.forma_invalida', 'Forma de pagamento inválida.'),
             ], [
                 'itens' => texto('admin_mesa_pedido', 'campo.itens', 'Itens'),
                 'nome_cliente' => texto('admin_mesa_pedido', 'campo.cliente', 'Nome do cliente'),
@@ -169,7 +179,7 @@ class MesaPedidosController extends Controller
                     'nome_cliente' => trim((string) ($dados['nome_cliente'] ?? '')) ?: $mesa->nome ?: ($mesa->codigo ?: ('Mesa #'.$mesa->id)),
                     'telefone' => '',
                     'tipo_entrega' => 'mesa',
-                    'forma_pagamento' => $dados['forma_pagamento'],
+                    'forma_pagamento' => null,
                     'subtotal' => round($total, 2),
                     'total' => round($total, 2),
                     'observacoes' => $dados['observacoes'] ?? null,
@@ -226,6 +236,10 @@ class MesaPedidosController extends Controller
      */
     public function estado(Request $request): JsonResponse
     {
+        if (! modulo_ativo('pdv')) {
+            return $this->jsonModuloOff();
+        }
+
         $ultimaVersao = $request->integer('ultima_versao') ?: null;
         $lojaId = loja_atual_id();
         $mesas = Mesa::query()->ativas()->orderBy('id')->get();
@@ -233,9 +247,9 @@ class MesaPedidosController extends Controller
         $pedidosPorMesa = Pedido::query()
             ->where('loja_id', $lojaId)
             ->whereIn('mesa_id', $mesas->pluck('id'))
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->orderBy('created_at')
-            ->get(['id', 'mesa_id', 'codigo', 'status', 'total', 'created_at', 'nome_cliente', 'forma_pagamento']);
+            ->get(['id', 'mesa_id', 'codigo', 'status', 'total', 'created_at', 'nome_cliente', 'forma_pagamento', 'entregue_mesa_em']);
 
         // Versão simples: hash determinístico do conjunto de pedidos.
         $versao = (int) substr(md5($pedidosPorMesa->toJson().'|'.$lojaId), 0, 8);
@@ -251,6 +265,7 @@ class MesaPedidosController extends Controller
 
             $temNovo = $pedidos->contains('status', 'novo');
             $temPreparo = $pedidos->contains('status', 'em_preparo');
+            $todosEntregues = $pedidos->isNotEmpty() && $pedidos->every(fn ($p) => ! is_null($p->entregue_mesa_em));
 
             $itens = $pedidos->sum(fn ($p) => $p->itens_count ?? 0);
 
@@ -266,12 +281,13 @@ class MesaPedidosController extends Controller
                     'cliente' => $p->nome_cliente,
                     'pagamento' => $p->forma_pagamento,
                     'quando' => optional($p->created_at)->format('H:i'),
+                    'entregue_mesa_em' => optional($p->entregue_mesa_em)->format('H:i'),
                 ])->values(),
                 'estado' => $temNovo
                     ? 'novo'
                     : ($temPreparo
                         ? 'em_preparo'
-                        : ($pedidos->isNotEmpty() ? 'em_entrega' : 'livre')),
+                        : ($todosEntregues ? 'entregue_mesa' : ($pedidos->isNotEmpty() ? 'em_entrega' : 'livre'))),
                 'total' => (float) $pedidos->sum('total'),
             ];
         })->values();
@@ -290,12 +306,16 @@ class MesaPedidosController extends Controller
      */
     public function detalhe(Mesa $mesa): JsonResponse
     {
+        if (! modulo_ativo('pdv')) {
+            return $this->jsonModuloOff();
+        }
+
         $mesa->load([]);
 
         $pedidos = Pedido::query()
             ->where('loja_id', loja_atual_id())
             ->where('mesa_id', $mesa->id)
-            ->whereIn('status', ['novo', 'em_preparo', 'em_entrega'])
+            ->contaAberta()
             ->with(['itens' => fn ($q) => $q->orderBy('id')])
             ->orderBy('created_at')
             ->get();
@@ -319,6 +339,7 @@ class MesaPedidosController extends Controller
                     'pagamento' => $p->forma_pagamento,
                     'observacoes' => $p->observacoes,
                     'quando' => optional($p->created_at)->format('H:i'),
+                    'entregue_mesa_em' => optional($p->entregue_mesa_em)->format('H:i'),
                     'itens' => $p->itens->map(fn ($i) => [
                         'nome' => $i->nome_produto,
                         'quantidade' => (int) $i->quantidade,
@@ -332,5 +353,69 @@ class MesaPedidosController extends Controller
                 ])->values(),
             ],
         ]);
+    }
+
+    /**
+     * Marca o pedido de mesa como "entregue na mesa" (a comida chegou no
+     * cliente do bar/restaurante). Exclusivo do fluxo de mesa — pedidos do
+     * site (delivery) ignoram este flag, pois o `entregue` do site significa
+     * "saiu para entrega" / "foi entregue ao cliente", e o do bar/restaurante
+     * significa "entregue ao cliente na mesa".
+     *
+     * Aceita qualquer pedido em aberto da mesa (`novo`, `em_preparo` ou
+     * `em_entrega`): o garçom sabe quando a comida chegou à mesa. O status
+     * já atualiza para `entregue` de uma vez e grava o timestamp em
+     * `entregue_mesa_em`; o pedido continua na conta da mesa até o caixa
+     * registrar o pagamento.
+     */
+    public function entregueMesa(Request $request, Pedido $pedido): JsonResponse
+    {
+        if (! modulo_ativo('pdv')) {
+            return $this->jsonModuloOff();
+        }
+
+        abort_unless($pedido->mesa_id !== null, 404, 'Pedido não é de mesa.');
+
+        if ($pedido->entregue_mesa_em === null) {
+            abort_unless(in_array($pedido->status, ['novo', 'em_preparo', 'em_entrega'], true), 422, 'Pedido não está aberto para entrega na mesa.');
+
+            $pedido->forceFill([
+                'status' => 'entregue',
+                'entregue_mesa_em' => now(),
+            ])->save();
+        } elseif ($pedido->status !== 'entregue') {
+            // Já havia sido marcado antes (flag antigo): só alinha o status.
+            $pedido->forceFill(['status' => 'entregue'])->save();
+        }
+
+        return response()->json([
+            'mensagem' => texto('admin_mesas_controle', 'cartao.entregue_sucesso', 'Pedido marcado como entregue na mesa!'),
+            'pedido' => [
+                'id' => $pedido->id,
+                'entregue_mesa_em' => optional($pedido->entregue_mesa_em)->format('H:i'),
+            ],
+        ]);
+    }
+
+    /**
+     * Gate do módulo PDV (telas de View): bloqueia quando o PDV está desligado.
+     */
+    protected function exigirPdv(): ?RedirectResponse
+    {
+        if (! modulo_ativo('pdv')) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('erro_modulo_caixa', texto('admin_caixa', 'erro.desativado', 'O módulo PDV (mesas, tablet e caixa) está desligado. Para ativá-lo, mude o flag ativo para 1 na tabela modulos.'));
+        }
+
+        return null;
+    }
+
+    /**
+     * Gate do módulo PDV (endpoints JSON): 403 com mensagem.
+     */
+    protected function jsonModuloOff(): JsonResponse
+    {
+        return response()->json(['mensagem' => texto('admin_caixa', 'erro.desativado', 'O módulo PDV está desligado.')], 403);
     }
 }
