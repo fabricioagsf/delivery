@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\CaixaController;
 use App\Http\Controllers\Admin\ConfiguracaoController;
 use App\Http\Controllers\Admin\CupomController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ModuloController;
 use App\Http\Controllers\Admin\PedidoController as AdminPedidoController;
 use App\Http\Controllers\Admin\ProdutoController as AdminProdutoController;
 use App\Http\Controllers\Admin\RelatorioController;
@@ -174,5 +176,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/mesas-controle', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'index'])->name('mesas-controle.index');
         Route::get('/mesas-controle/estado', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'estado'])->name('mesas-controle.estado');
         Route::get('/mesas-controle/mesa/{mesa}', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'detalhe'])->name('mesas-controle.detalhe');
+
+        Route::get('/mesa/{mesa}/pedido', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'pedir'])->name('mesa.pedido');
+        Route::post('/mesa/{mesa}/pedido/confirmar', [\App\Http\Controllers\Admin\MesaPedidosController::class, 'confirmarPedido'])->name('mesa.pedidoConfirmar');
+
+        Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.index');
+        Route::get('/caixa/estado', [CaixaController::class, 'estado'])->name('caixa.estado');
+        Route::get('/caixa/mesa/{mesa}', [CaixaController::class, 'conta'])->name('caixa.conta');
+        Route::post('/caixa/mesa/{mesa}/fechar', [CaixaController::class, 'fechar'])->name('caixa.fechar');
+
+        Route::post('/caixa/mesa/{mesa}/pix-efi', [CaixaController::class, 'pixEfi'])->name('caixa.pixEfi');
+
+        Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
     });
 });

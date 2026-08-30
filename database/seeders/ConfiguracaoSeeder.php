@@ -49,6 +49,10 @@ class ConfiguracaoSeeder extends Seeder
             'efi_client_secret' => '',
             'efi_pix_chave' => '',             // chave Pix cadastrada no app Efí
             'efi_sandbox' => '1',              // '1' = homologação (apisandbox)
+            'efi_taxa' => '',                  // percentual da taxa da operadora no Pix automático ('' = não informada)
+
+            // Cidade da empresa, usada no payload do QR Pix (copia e cola)
+            'empresa_cidade' => '',
 
             // ===== Módulo de produtos e serviços (item-venda) =====
             'item_venda_ativo' => '0',         // '1' = módulo de produtos/serviços ativo

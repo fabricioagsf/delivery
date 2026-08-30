@@ -18,7 +18,7 @@
             <div class="modal-personalizar__confirma">
                 <strong data-total></strong>
                 <button type="button" class="botao botao--chefe" data-confirmar>
-                    {{ texto('vitrine', 'modal.confirmar', 'Adicionar ao carrinho') }}
+                    {{ $confirmarTexto ?? texto('vitrine', 'modal.confirmar', 'Adicionar ao carrinho') }}
                 </button>
             </div>
         </div>

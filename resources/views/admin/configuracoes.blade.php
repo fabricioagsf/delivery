@@ -82,6 +82,8 @@
 
         <x-config-input name="empresa_razao_social" :label="texto('admin_config', 'campo.razao', 'Razão social')" :value="old('empresa_razao_social', $valores['empresa_razao_social'] ?? '')" />
 
+        <x-config-input name="empresa_cidade" :label="texto('admin_config', 'campo.cidade', 'Cidade da empresa (usada no QR Pix)')" :value="old('empresa_cidade', $valores['empresa_cidade'] ?? '')" />
+
         <label>{{ texto('admin_config', 'campo.ambiente', 'Ambiente SEFAZ') }}
             <select name="nfe_ambiente">
                 <option value="2" {{ old('nfe_ambiente', $valores['nfe_ambiente'] ?? '2') === '2' ? 'selected' : '' }}>{{ texto('admin_config', 'ambiente.homologacao', 'Homologação (testes)') }}</option>
@@ -221,6 +223,10 @@
 
         <x-config-pair>
             <x-config-input name="efi_pix_chave" :label="texto('admin_config', 'campo.efi_pix_chave', 'Chave Pix do recebimento')" :value="old('efi_pix_chave', $valores['efi_pix_chave'] ?? '')" />
+            <x-config-input name="efi_taxa" :label="texto('admin_config', 'campo.efi_taxa', 'Taxa da operadora Efí (%) aplicada no Pix automático do caixa')" type="number" min="0" max="100" step="0.01" :value="old('efi_taxa', $valores['efi_taxa'] ?? '')" />
+        </x-config-pair>
+
+        <x-config-pair>
             <label class="caixa-marcar caixa-marcar--linha">
                 <input type="checkbox" name="efi_sandbox" value="1" {{ old('efi_sandbox', $valores['efi_sandbox'] ?? '1') === '1' ? 'checked' : '' }}>
                 {{ texto('admin_config', 'campo.efi_sandbox', 'Homologação (testes) — desligue para produção') }}

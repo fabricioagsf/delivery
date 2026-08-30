@@ -39,6 +39,11 @@
                 <div class="cartao-mesa__corpo">
                     <span class="cartao-mesa__estado-texto">{{ texto('admin_mesas_controle', 'estado.livre', 'Livre') }}</span>
                 </div>
+                <footer class="cartao-mesa__acoes">
+                    <a class="mini-botao mini-botao--primario"
+                       href="{{ route('admin.mesa.pedido', ['mesa' => $mesa]) }}"
+                       data-fazer-pedido>{{ texto('admin_mesas_controle', 'cartao.fazer_pedido', 'Fazer pedido') }}</a>
+                </footer>
             </article>
         @empty
             <p class="vazio">{{ texto('admin_mesas_controle', 'vazio', 'Nenhuma mesa ativa cadastrada. Vá em Mesas e ative ao menos uma para começar.') }}</p>

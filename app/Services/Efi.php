@@ -91,8 +91,41 @@ class Efi
      */
     public function criarCobranca(Pedido $pedido): array
     {
-        $txid = $this->txid($pedido);
+        return $this->cobrar(
+            $this->txid($pedido),
+            (string) $pedido->nome_cliente,
+            (float) $pedido->total,
+            'Pedido '.$pedido->codigo.' — Gostosuras'
+        );
+    }
 
+    /**
+     * Cria (ou devolve a existente) a cobrança Pix da conta de UMA mesa,
+     * com o txid derivado da mesa (idempotente).
+     *
+     * @return array{txid: string, copia_e_cola: string, status: string}
+     *
+     * @throws \RuntimeException com mensagem humana quando falha
+     */
+    public function criarCobrancaConta(string $txid, string $nomeMesa, float $total): array
+    {
+        return $this->cobrar(
+            str_pad(preg_replace('/[^A-Za-z0-9]/', '', $txid), 26, 'G0', STR_PAD_RIGHT),
+            $nomeMesa,
+            $total,
+            'Mesa '.$nomeMesa.' — Gostosuras'
+        );
+    }
+
+    /**
+     * Chamada comum de criação/consulta de cobrança (PUT /v2/cob/:txid).
+     *
+     * @return array{txid: string, copia_e_cola: string, status: string}
+     *
+     * @throws \RuntimeException com mensagem humana quando falha
+     */
+    private function cobrar(string $txid, string $nomeDevedor, float $valor, string $solicitacao): array
+    {
         // Idempotente: PUT na mesma cobrança devolve a existente
         try {
             $resposta = Http::withToken($this->token())
@@ -101,11 +134,11 @@ class Efi
                 ->put($this->base().'/v2/cob/'.$txid, [
                     'calendario' => ['expiracao' => 86400],
                     'devedor' => [
-                        'nome' => mb_substr($pedido->nome_cliente, 0, 200),
+                        'nome' => mb_substr($nomeDevedor, 0, 200),
                     ],
-                    'valor' => ['original' => number_format((float) $pedido->total, 2, '.', '')],
+                    'valor' => ['original' => number_format($valor, 2, '.', '')],
                     'chave' => trim((string) config_loja('efi_pix_chave')),
-                    'solicitacaoPagador' => mb_substr('Pedido '.$pedido->codigo.' — Gostosuras', 0, 140),
+                    'solicitacaoPagador' => mb_substr($solicitacao, 0, 140),
                 ]);
         } catch (\Throwable) {
             throw new \RuntimeException(texto('pagamentos', 'efi.erro_conexao', 'Não foi possível falar com a Efí agora — tente de novo.'));
@@ -113,7 +146,7 @@ class Efi
 
         if (! $resposta->successful() || empty($resposta->json('pixCopiaECola'))) {
             Log::warning('Efí: cobrança Pix recusada.', [
-                'pedido' => $pedido->codigo,
+                'txid' => $txid,
                 'status' => $resposta->status(),
                 'resposta' => $resposta->json(),
             ]);

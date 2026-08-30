@@ -47,6 +47,11 @@
             <a href="{{ route('admin.pedidos.index') }}" class="{{ request()->routeIs('admin.pedidos.*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.pedidos', 'Pedidos') }}
             </a>
+            @if(modulo_ativo('caixa'))
+                <a href="{{ route('admin.caixa.index') }}" class="{{ request()->routeIs('admin.caixa*') ? 'ativo' : '' }}">
+                    {{ texto('admin_layout', 'menu.caixa', 'Caixa') }}
+                </a>
+            @endif
             <a href="{{ route('admin.clientes.index') }}" class="{{ request()->routeIs('admin.clientes*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.clientes', 'Clientes') }}
             </a>
@@ -82,6 +87,9 @@
             </a>
             <a href="{{ route('admin.lojas.index') }}" class="{{ request()->routeIs('admin.lojas*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.lojas', 'Lojas') }}
+            </a>
+            <a href="{{ route('admin.modulos.index') }}" class="{{ request()->routeIs('admin.modulos*') ? 'ativo' : '' }}">
+                {{ texto('admin_layout', 'menu.modulos', 'Módulos') }}
             </a>
             <a href="{{ route('admin.pwa.index') }}" class="{{ request()->routeIs('admin.pwa*') ? 'ativo' : '' }}">
                 {{ texto('admin_layout', 'menu.pwa', 'PWA / App') }}

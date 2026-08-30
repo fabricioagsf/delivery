@@ -250,6 +250,36 @@ if (! function_exists('mesa_sessao_id')) {
     }
 }
 
+if (! function_exists('modulo_ativo')) {
+    /**
+     * Indica se um módulo está ligado (flag `ativo` = 1 na tabela `modulos`).
+     * A ativação é feita APENAS direto no banco; este helper só lê o estado.
+     * Prioriza a linha da loja ativa; sem ela, usa a global (loja_id NULL).
+     */
+    function modulo_ativo(string $slug): bool
+    {
+        static $cache = [];
+
+        if (array_key_exists($slug, $cache)) {
+            return $cache[$slug];
+        }
+
+        try {
+            $modulo = \App\Models\Modulo::query()
+                ->where('slug', $slug)
+                ->where(fn ($q) => $q->where('loja_id', loja_atual_id())->orWhereNull('loja_id'))
+                ->orderByRaw('loja_id IS NULL')
+                ->first();
+
+            $cache[$slug] = (bool) ($modulo?->ativo ?? false);
+        } catch (Throwable) {
+            $cache[$slug] = false;
+        }
+
+        return $cache[$slug];
+    }
+}
+
 if (! function_exists('promo_destaque')) {
     /**
      * Cupom promocional destacado na vitrine/cardápio (config `cupom_destaque`),

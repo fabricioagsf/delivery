@@ -10,6 +10,8 @@ class NotaFiscal extends Model
 {
     use Auditoravel;
 
+    protected $table = 'notas_fiscais';
+
     protected $fillable = [
         'pedido_id',
         'modelo',
